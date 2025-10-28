@@ -1,896 +1,389 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>🐧 Penguin Companion — XP Planner</title>
-<style>
-:root{
-  --brand:#60a5fa;--bg1:#0b1020;--bg2:#131a2c;
-  --panel:#111827;--panel2:#1e293b;--ink:#0f172a;
-  --ok:#16a34a;--warn:#f59e0b;--danger:#dc2626;--muted:#94a3b8;
-}
-*{box-sizing:border-box}
-body{margin:0;background:linear-gradient(135deg,var(--bg1),var(--bg2));color:#fff;font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,sans-serif}
-h1{margin:18px 20px 6px;color:var(--brand)}
-.container{display:flex;flex-wrap:wrap;gap:20px;justify-content:center;padding:10px 20px 40px}
-.card{background:var(--panel);border-radius:16px;box-shadow:0 6px 18px rgba(0,0,0,.35);padding:16px;width:372px}
-.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-input,button,select{border:none;border-radius:10px;padding:10px 12px;font-size:14px}
-button{background:#2563eb;color:#fff;cursor:pointer}button:hover{background:#3b82f6}
-.ghost{background:#0b1220;border:1px solid #334155}
-.deleteBtn{background:var(--danger)}.deleteBtn:hover{background:#ef4444}
-.small{font-size:12px;color:#cbd5e1}
-ul{list-style:none;margin:0;padding:0}
-li{background:var(--panel2);margin:6px 0;padding:10px;border-radius:10px;display:flex;justify-content:space-between;align-items:center}
-.badge{display:inline-block;font-size:11px;border:1px solid #334155;background:#0c1424;padding:2px 8px;border-radius:999px}
-
-/* Header: XP/Coins */
-#levelLine{display:flex;flex-direction:column;align-items:center;margin-top:4px}
-#progressContainer{width:340px;height:18px;background:var(--panel2);border-radius:999px;overflow:hidden;margin:8px auto 14px}
-#progressBar{height:100%;width:0;background:linear-gradient(90deg,#60a5fa,#3b82f6);transition:width .4s}
-
-/* Stats bars */
-.statRow{margin:10px 0}
-.statHeader{display:flex;justify-content:space-between;font-size:12px;color:#cbd5e1;margin-bottom:6px}
-.statOuter{height:20px;background:#0b1220;border-radius:999px;overflow:hidden}
-.statBar{height:100%;width:0;background:linear-gradient(90deg,#3b82f6,#9333ea);transition:width .8s}
-
-/* Planner (vertical 15-min) */
-#scheduleWrap{height:480px;overflow:auto;border-radius:12px;border:1px solid #334155;background:#0b1220}
-#timeline{position:relative;min-height:1440px}
-#timeLabels{position:absolute;left:0;top:0;width:74px;border-right:1px solid #1f2937;color:#94a3b8;font-size:12px}
-.timeLabel{position:absolute;left:8px;transform:translateY(-50%)}
-.gridLine{position:absolute;left:74px;right:0;height:1px;background:#1f2937;opacity:.7}
-.gridLine.q{opacity:.35}
-#eventLayer{position:absolute;left:84px;right:12px;top:0;bottom:0}
-.eventBlock{position:absolute;left:0;right:0;border-radius:10px;padding:6px 10px;color:#0b1220;font-weight:600;border:1px solid #0f172a;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.25)}
-.eventTitle{font-size:13px}.eventTime{font-size:11px;opacity:.85}
-#nowMarker{position:absolute;left:74px;right:0;height:2px;background:#60a5fa;box-shadow:0 0 8px #60a5faaa}
-#nowPenguin{position:absolute;left:44px;transform:translate(-50%,-50%);font-size:16px}
-
-/* Penguin (3D-ish CSS) */
-.penguin{--p:#0ea5e9;--accent:#0b7bbb;--white:#f8fafc;width:110px;height:120px;position:relative;filter:drop-shadow(0 10px 20px rgba(0,0,0,.35))}
-.penguin .body{position:absolute;inset:0;border-radius:55% 55% 50% 50%/60% 60% 40% 40%;background:radial-gradient(circle at 50% 35%, var(--white) 0 45%, var(--p) 46% 100%)}
-.penguin .wing{position:absolute;top:45px;width:34px;height:54px;background:linear-gradient(180deg,var(--p),var(--accent));border-radius:40px}
-.penguin .wing.left{left:-6px;transform:rotate(-12deg);transform-origin:top right}
-.penguin .wing.right{right:-6px;transform:rotate(12deg);transform-origin:top left}
-.penguin .eye{position:absolute;top:36px;width:14px;height:14px;border-radius:50%;background:#0b1220;box-shadow:0 0 0 3px var(--white)}
-.penguin .eye.left{left:34px}.penguin .eye.right{right:34px}
-.penguin .beak{position:absolute;top:58px;left:50%;transform:translateX(-50%);width:24px;height:14px;border-radius:0 0 14px 14px;background:linear-gradient(180deg,#f59e0b,#d97706)}
-.acc{position:absolute;pointer-events:none}.acc-head{z-index:3}.acc-body{z-index:2}.acc-eff{z-index:0;inset:-6px;border-radius:20px}
-
-/* Shop grid */
-#shopGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-.shop-item{background:#0b1220;border:1px solid #334155;border-radius:12px;padding:10px;position:relative;min-height:152px}
-.shop-item .thumb{height:78px;display:flex;align-items:center;justify-content:center}
-.shop-item .name{font-weight:600;margin-top:6px}.shop-item .meta{font-size:12px;color:#cbd5e1}
-.shop-item .btns{display:flex;gap:6px;margin-top:8px}
-.badgeCorner{position:absolute;top:8px;left:8px;font-size:11px;background:#1f2937;border:1px solid #334155;border-radius:999px;padding:2px 6px}
-.locked::after{content:"🔒";position:absolute;top:8px;right:8px}
-.owned{position:absolute;bottom:8px;right:8px;font-size:11px;background:#14532d;border:1px solid #166534;border-radius:999px;padding:2px 6px}
-
-/* Overlay: Pomodoro */
-#pomodoroOverlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.92);z-index:60}
-#pomodoroBox{background:#0f172a;border:1px solid #334155;border-radius:18px;padding:16px;width:420px;text-align:center;box-shadow:0 0 20px rgba(0,0,0,.5)}
-#pomoHeader{display:flex;justify-content:space-between;align-items:center}
-#pomodoroTimer{font-size:46px;margin:10px 0 6px}
-.phase{color:var(--muted);margin-bottom:6px}
-#focusCircle,#breakCircle{width:140px;height:140px;margin:8px auto;border-radius:50%;animation:pulse 2s infinite ease-in-out;background:radial-gradient(circle,#2563eb 0%,#1d4ed8 70%,transparent 100%)}
-#breakCircle{display:none;background:radial-gradient(circle,#16a34a 0%,#15803d 70%,transparent 100%)}
-@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
-.pbtn{margin:6px 4px;padding:8px 14px;border-radius:10px}
-.exit{background:var(--danger)}.done{background:var(--ok)}.pause{background:var(--warn)}.ghost-link{background:#0b1220;border:1px solid #334155}
-
-/* Scene (Pomodoro) with Tech Lab blend */
-#scene{position:relative;width:560px;max-width:94vw;height:320px;margin:8px auto;border:1px solid #1f2a3a;border-radius:14px;overflow:hidden;background:#081120}
-.scene-item{position:absolute}
-.lab-bg,.lab-circuits,.lab-pulse{position:absolute;inset:0;pointer-events:none}
-.lab-bg{background:radial-gradient(120% 100% at 20% 0%, #031226 0%, #06223e 40%, #032136 60%, #021423 100%);animation:labFlow 12s ease-in-out infinite alternate}
-@keyframes labFlow{0%{filter:hue-rotate(0) brightness(1)}100%{filter:hue-rotate(10deg) brightness(1.1)}}
-.lab-circuits{background:linear-gradient(to right,transparent 49%,rgba(0,255,255,.1) 50%,transparent 51%) 0 0/28px 28px,linear-gradient(to bottom,transparent 49%,rgba(0,255,255,.08) 50%,transparent 51%) 0 0/28px 28px;mix-blend-mode:screen;opacity:.55;filter:drop-shadow(0 0 6px rgba(0,255,255,.55));animation:gridGlow 3.8s ease-in-out infinite}
-@keyframes gridGlow{0%,100%{opacity:.45;filter:drop-shadow(0 0 6px rgba(0,255,255,.45))}50%{opacity:.8;filter:drop-shadow(0 0 10px rgba(0,255,255,.9))}}
-.lab-pulse{background:radial-gradient(circle at 50% 60%, rgba(0,255,255,.18), transparent 45%),radial-gradient(circle at 50% 60%, rgba(0,255,255,.12), transparent 25%);animation:labPulse 4s ease-in-out infinite}
-@keyframes labPulse{0%,100%{opacity:.35}50%{opacity:.85}}
-
-/* Calls overlay & floating */
-#callOverlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.92);z-index:58}
-#callBox{background:#0f172a;border:1px solid #334155;border-radius:18px;padding:16px;width:560px;text-align:center}
-#sceneCall{position:relative;width:560px;max-width:94vw;height:320px;margin:8px auto;border:1px solid #1f2a3a;border-radius:14px;overflow:hidden;background:#081120}
-#callPomoTiny{font-family:monospace;color:#a7f3d0;margin-top:4px;display:none}
-#callWindow{position:fixed;right:18px;bottom:18px;width:320px;background:#0b1220;border:1px solid #334155;border-radius:16px;display:none;flex-direction:column;z-index:55;box-shadow:0 10px 30px rgba(0,0,0,.4)}
-#callHeader{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-bottom:1px solid #1f2937;cursor:move}
-#callBody{padding:10px;text-align:center}
-#callPomoTinyFloat{font-family:monospace;color:#a7f3d0;margin-top:6px;display:none}
-
-/* Modals (edit block / calc / search / alarm) */
-#modal,#calcModal,#searchModal,#alarmPopup{position:fixed;inset:0;background:rgba(0,0,0,.82);display:none;align-items:center;justify-content:center;z-index:80}
-.show{display:flex;animation:fade .25s} @keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-.modalBox{background:#0b1220;border:1px solid #334155;border-radius:16px;padding:20px;width:300px;text-align:center}
-.modalBox input{width:100%}
-.modalActions{display:flex;gap:8px;justify-content:center;margin-top:10px}
-#calcBox{background:#0b1220;border:1px solid #334155;border-radius:16px;padding:20px;width:320px}
-#calcDisplay{width:100%;height:40px;font-size:18px;border-radius:8px;padding:6px;border:none;text-align:right;background:#0e1726;color:#fff;margin-bottom:8px}
-.calcBtns{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
-.calcBtns button{padding:14px;font-size:16px}
-#searchBox{background:#0b1220;border:1px solid #334155;border-radius:16px;padding:20px;width:90%;max-width:800px;height:82%}
-#searchFrame{width:100%;height:calc(100% - 56px);border:none;border-radius:10px;margin-top:8px;background:#0e1726}
-#searchControls{display:flex;gap:8px}
-#searchInput{flex:1;border-radius:8px;padding:10px;background:#0e1726;color:#fff;border:1px solid #334155}
-
-/* Settings gear floating */
-#gearBtn{position:fixed;top:14px;right:16px;z-index:70;background:linear-gradient(180deg,#0f172a,#0b1220);border:1px solid #2b354a;color:#c0eaff;border-radius:999px;padding:8px 10px}
-
-/* Settings sidebar */
-#settingsOverlay{position:fixed;inset:0;display:none;z-index:95;align-items:stretch;justify-content:flex-end;background:rgba(0,0,0,.35);backdrop-filter:blur(5px) brightness(.85)}
-#settingsPanel{width:340px;max-width:92vw;height:100%;background:rgba(17,25,40,.9);border-left:1px solid #1d2a40;box-shadow:0 0 16px #00eaff33 inset,0 0 24px #00c8ff44;padding:16px 16px 22px;display:flex;flex-direction:column;gap:12px;transform:translateX(100%);transition:transform .28s ease}
-#settingsOverlay.show{display:flex}#settingsOverlay.show #settingsPanel{transform:translateX(0)}
-.settingRow{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.slider{width:100%}
-</style>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>🐧 Penguin Companion — XP Planner</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<button id="gearBtn" title="Settings">⚙️</button>
-<h1>🐧 Penguin Companion — XP Planner</h1>
-
-<div id="levelLine">
-  <div>Level <span id="level">1</span> • XP <span id="exp">0.00</span> • Coins <span id="coins">0</span></div>
-</div>
-<div id="progressContainer"><div id="progressBar"></div></div>
-
-<div class="container">
-  <!-- Tasks -->
-  <div class="card">
-    <h2>✅ Tasks</h2>
-    <div class="row">
-      <input id="taskName" placeholder="Task" style="flex:1">
-      <input id="taskXP" type="number" step="0.01" min="0.01" placeholder="XP" style="width:90px">
-      <select id="taskCat" style="width:120px"></select>
-      <button onclick="addTask()">Add</button>
+  <!-- Header -->
+  <header class="app-header">
+    <div class="brand">
+      <span class="brand-emoji">🐧</span>
+      <h1>Penguin Companion — XP Planner</h1>
     </div>
-    <div class="row"><button class="ghost" onclick="addCategory()">+ Category</button></div>
-    <ul id="taskList"></ul>
-  </div>
-
-  <!-- Rewards -->
-  <div class="card">
-    <h2>🎁 Rewards</h2>
-    <div class="row">
-      <input id="rewardName" placeholder="Reward" style="flex:1">
-      <input id="rewardCost" type="number" step="0.01" min="0.01" placeholder="Cost" style="width:90px">
-      <button onclick="addReward()">Add</button>
+    <div class="header-stats">
+      <span id="hdrLevel">Level 1</span>
+      <span>•</span>
+      <span id="hdrXP">XP 0.00</span>
+      <span>•</span>
+      <span id="hdrCoins">Coins 0</span>
     </div>
-    <ul id="rewardList"></ul>
-  </div>
+    <button id="btnSettings" class="icon-btn" title="Settings">⚙️</button>
+  </header>
 
-  <!-- Stats -->
-  <div class="card">
-    <h2>📊 Category Stats</h2>
-    <div id="statsChart"></div>
-  </div>
+  <!-- XP Progress -->
+  <section class="progress-wrap">
+    <div class="progress-bar"><div id="xpBar" class="progress-fill" style="width:0%"></div></div>
+  </section>
 
-  <!-- Planner -->
-  <div class="card" id="scheduleCard">
-    <h2>📆 Time-Blocking (15-min)</h2>
-    <div class="row">
-      <input id="schedTitle" placeholder="Block title" style="flex:1">
-      <input id="schedStart" type="time" step="900" value="08:00">
-      <input id="schedEnd" type="time" step="900" value="09:00">
-      <input id="schedColor" type="color" value="#60a5fa">
-      <button onclick="addBlock()">Add</button>
-    </div>
-    <div class="row">
-      <button onclick="addFromTasks()">📋 Add from Tasks</button>
-      <button class="ghost" onclick="clearSchedule()">🧹 Clear Schedule</button>
-      <button class="ghost" onclick="clearTodayHistory()">🗑 Clear Today’s History</button>
-    </div>
-    <div id="scheduleWrap">
-      <div id="timeline">
-        <div id="timeLabels"></div>
-        <div id="eventLayer"></div>
-        <div id="nowMarker"></div>
-        <div id="nowPenguin">🐧</div>
+  <!-- Main Grid -->
+  <main class="grid">
+    <!-- Tasks -->
+    <section class="card">
+      <h2 data-i18n="tasksTitle">✅ Tasks</h2>
+      <div class="row">
+        <input id="taskName" placeholder="Task">
+        <input id="taskXP" type="number" step="0.01" min="0.01" placeholder="XP">
+        <select id="taskCat"></select>
+        <button id="btnAddTask" class="primary">Add</button>
+      </div>
+      <div class="row">
+        <button id="btnAddCat" class="ghost">+ Category</button>
+      </div>
+      <ul id="taskList" class="list"></ul>
+    </section>
+
+    <!-- Rewards -->
+    <section class="card">
+      <h2 data-i18n="rewardsTitle">🎁 Rewards</h2>
+      <div class="row">
+        <input id="rewardName" placeholder="Reward">
+        <input id="rewardCost" type="number" step="0.01" min="0.01" placeholder="Cost">
+        <button id="btnAddReward" class="primary">Add</button>
+      </div>
+      <ul id="rewardList" class="list"></ul>
+    </section>
+
+    <!-- Stats -->
+    <section class="card">
+      <h2>📊 <span data-i18n="statsTitle">Category Stats</span></h2>
+      <div id="statsChart"></div>
+    </section>
+
+    <!-- Planner / Time blocking -->
+    <section class="card wide">
+      <h2>📆 <span data-i18n="plannerTitle">Time-Blocking (15-min)</span></h2>
+      <div class="row">
+        <input id="schedTitle" placeholder="Block title">
+        <input id="schedStart" type="time" step="900" value="08:00">
+        <input id="schedEnd" type="time" step="900" value="09:00">
+        <input id="schedColor" type="color" value="#60a5fa">
+        <button id="btnAddBlock" class="primary">Add</button>
+      </div>
+      <div class="row">
+        <button id="btnAddFromTasks">📋 Add from Tasks</button>
+        <button id="btnClearSchedule" class="ghost">🧹 Clear Schedule</button>
+        <button id="btnClearToday" class="ghost">🗑 Clear Today’s History</button>
+      </div>
+      <div id="scheduleWrap">
+        <div id="timeline">
+          <div id="timeLabels"></div>
+          <div id="eventLayer"></div>
+          <div id="nowMarker"></div>
+          <div id="nowPenguin">🐧</div>
+        </div>
+      </div>
+      <p class="hint" data-i18n="clickBlock">Click a block to edit or delete.</p>
+    </section>
+
+    <!-- Avatar -->
+    <section class="card">
+      <h2>🐧 <span data-i18n="avatarTitle">My Penguin</span></h2>
+      <div class="row center">
+        <div id="avatarPreview" class="penguin">
+          <div class="body"></div><div class="wing left"></div><div class="wing right"></div>
+          <div class="eye left"></div><div class="eye right"></div><div class="beak"></div>
+        </div>
+        <div class="hello"><span data-i18n="hiIm">Hi, I’m</span> <strong id="avatarName">Pingu</strong>!</div>
+      </div>
+      <div class="row"><input id="nameInput" placeholder="Name (e.g., Penny)"></div>
+      <div class="row wrap" id="colorChips"></div>
+      <div class="row">
+        <select id="equipHead" class="grow"></select>
+        <select id="equipBody" class="grow"></select>
+        <select id="equipEffect" class="grow"></select>
+      </div>
+      <div class="row"><button id="btnSaveAvatar" class="primary">Save Avatar</button></div>
+    </section>
+
+    <!-- Shop -->
+    <section class="card wide">
+      <h2>🛍️ <span data-i18n="shopTitle">Penguin Shop</span></h2>
+      <div id="shopGrid" class="shop-grid"></div>
+    </section>
+
+    <!-- Pomodoro & Calls -->
+    <section class="card">
+      <h2>⏱️ Pomodoro & 📞 Calls</h2>
+      <div class="row wrap">
+        <label>Focus <input id="focusInput" type="number" min="1" value="25"></label>
+        <label>Break <input id="breakInput" type="number" min="1" value="5"></label>
+        <label>Long <input id="longBreakInput" type="number" min="1" value="15"></label>
+        <button id="btnSavePomo" class="primary">Save</button>
+      </div>
+      <div class="row wrap">
+        <button id="btnCall" class="primary">🎥 Call Penguin</button>
+        <button class="ghost" data-call="Study">Study</button>
+        <button class="ghost" data-call="Exercise">Exercise</button>
+        <button class="ghost" data-call="Eat">Eat</button>
+        <button class="ghost" data-call="Bath">Bath</button>
+        <button class="ghost" data-call="Sleep">Sleep</button>
+        <button id="btnOpenPomo" class="ghost">🍅 Open Pomodoro</button>
+        <button id="btnMeet" class="ghost">🔗 Share call (Meet)</button>
+      </div>
+      <p class="hint">Ambient Lab hum is muted by default. Toggle in overlays.</p>
+    </section>
+
+    <!-- Tools -->
+    <section class="card">
+      <h2>🧮 & 🔍 Tools</h2>
+      <div class="row space">
+        <button id="btnCalc">Open Calculator</button>
+        <button id="btnSearch">Open Quick Search</button>
+      </div>
+    </section>
+
+    <!-- Alarms -->
+    <section class="card">
+      <h2>⏰ Alarms</h2>
+      <div class="row wrap">
+        <input id="alarmTime" type="time" step="60" value="08:00">
+        <input id="alarmLabel" placeholder="Label">
+        <select id="alarmTone">
+          <option value="soft">Soft Digital 🔔</option>
+          <option value="beep">Penguin Beep-Boop 🐧</option>
+          <option value="ping">Pure Ping 🎧</option>
+        </select>
+        <button id="btnAddAlarm" class="primary">Add</button>
+      </div>
+      <ul id="alarmList" class="list"></ul>
+    </section>
+
+    <!-- History -->
+    <section class="card wide">
+      <h2>📅 History (Today)</h2>
+      <div id="historySummary" class="hint">Total: 0 Pomodoros • 0 XP earned</div>
+      <ul id="historyList" class="list"></ul>
+    </section>
+
+    <!-- Export / Import -->
+    <section class="card wide">
+      <h2>💾 Export / Import</h2>
+      <div class="row wrap">
+        <button id="btnExportJSON" class="primary">Export JSON</button>
+        <button id="btnExportCSV" class="ghost">Export CSV</button>
+        <input id="importFile" type="file" accept=".json,.csv" style="display:none">
+        <button id="btnImport">Import (JSON/CSV)</button>
+        <label class="hint"><input id="overwriteImport" type="checkbox"> Overwrite instead of merge</label>
+      </div>
+    </section>
+
+    <!-- Race Mode -->
+    <section class="card wide">
+      <h2>🏁 Race Mode (Shared Pomodoro)</h2>
+      <div class="row wrap">
+        <button id="btnRaceCreate" class="primary">Create Room</button>
+        <button id="btnRaceJoin" class="ghost">Join Room</button>
+        <input id="raceCodeInput" placeholder="Enter code">
+        <span id="raceCodeBadge" class="badge"></span>
+      </div>
+      <div id="raceArea" class="race-area hidden">
+        <div class="row wrap">
+          <span>Room:</span> <strong id="raceRoom"></strong>
+          <span>•</span> <span>Members:</span> <strong id="raceMembers">1</strong>
+          <span>•</span> <span>Phase:</span> <strong id="racePhase">Focus</strong>
+          <span>•</span> <span>Timer:</span> <strong id="raceTimer">--:--</strong>
+        </div>
+        <div class="row wrap">
+          <select id="raceTaskSelect"></select>
+          <button id="raceMarkDone" class="primary">Mark Task Complete</button>
+          <button id="raceStartPomo" class="ghost">Start Shared Pomodoro</button>
+          <button id="raceEnd" class="danger">End Race</button>
+        </div>
+        <div id="raceLeaderboard" class="leaderboard"></div>
+        <div id="racePodium" class="podium hidden"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Edit Block Modal -->
+  <div id="editModal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-box">
+      <h3>Edit Block</h3>
+      <input id="mTitle">
+      <div class="row">
+        <label>Start <input id="mStart" type="time" step="900"></label>
+        <label>End <input id="mEnd" type="time" step="900"></label>
+      </div>
+      <label>Color <input id="mColor" type="color"></label>
+      <div class="row wrap">
+        <button id="mSave" class="primary">Save</button>
+        <button id="mDelete" class="danger">Delete</button>
+        <button id="mCancel" class="ghost">Cancel</button>
       </div>
     </div>
-    <p class="small">Click a block to edit or delete.</p>
   </div>
 
-  <!-- Avatar -->
-  <div class="card">
-    <h2>🐧 My Penguin</h2>
-    <div class="row" style="align-items:center">
-      <div id="penguinPreview" class="penguin">
-        <div class="body"></div><div class="wing left"></div><div class="wing right"></div>
-        <div class="eye left"></div><div class="eye right"></div><div class="beak"></div>
+  <!-- Pomodoro Overlay -->
+  <div id="pomodoroOverlay" class="overlay hidden" role="dialog" aria-modal="true">
+    <div class="pomo-box">
+      <div class="overlay-head">
+        <div id="pomoTitle">🍅 Pomodoro</div>
+        <div class="row wrap">
+          <label class="hint">🔊 Ambient <input id="ambientToggle" type="checkbox"></label>
+          <input id="ambientVolume" type="range" min="0" max="100" value="40">
+          <button id="pomoClose" class="ghost">✖ Close</button>
+        </div>
       </div>
-      <div>Hi, I’m <span id="avatarName">Pingu</span>!</div>
-    </div>
-    <div class="row"><input id="nameInput" placeholder="Name (e.g., Penny)" style="flex:1"></div>
-    <div class="row">
-      <button class="chip" data-color="#0ea5e9">Blue</button>
-      <button class="chip" data-color="#ef4444">Red</button>
-      <button class="chip" data-color="#22c55e">Green</button>
-      <button class="chip" data-color="#a855f7">Purple</button>
-      <button class="chip" data-color="#f59e0b">Gold</button>
-    </div>
-    <div class="row">
-      <select id="equipHead" style="flex:1">
-        <option value="">Head: none</option><option value="cap">Cap</option><option value="crown">Crown</option><option value="grad">Grad Hat</option><option value="headphones">Headphones</option><option value="glasses">Glasses</option>
-      </select>
-      <select id="equipBody" style="flex:1">
-        <option value="">Body: none</option><option value="scarf">Scarf</option><option value="bow">Bow</option><option value="cape">Cape</option><option value="mittens">Mittens</option>
-      </select>
-      <select id="equipEffect" style="flex:1">
-        <option value="">Effect: none</option><option value="aura">Aura</option><option value="rainbow">Rainbow Aura</option><option value="frost">Frost Aura</option>
-      </select>
-    </div>
-    <div class="row"><button onclick="saveAvatar()">Save Avatar</button></div>
-  </div>
-
-  <!-- Shop -->
-  <div class="card">
-    <h2>🛍️ Penguin Shop</h2>
-    <div id="shopGrid"></div>
-  </div>
-
-  <!-- Pomodoro & Calls -->
-  <div class="card">
-    <h2>⏱️ Pomodoro & 📞 Calls</h2>
-    <div class="row">
-      <label>Focus <input id="focusInput" type="number" min="1" value="25" style="width:80px"></label>
-      <label>Break <input id="breakInput" type="number" min="1" value="5" style="width:80px"></label>
-      <label>Long <input id="longBreakInput" type="number" min="1" value="15" style="width:80px"></label>
-      <button onclick="saveSettings()">Save</button>
-    </div>
-    <div class="row" style="gap:6px;flex-wrap:wrap">
-      <button onclick="startFreeCall('Chill')">🎥 Call Penguin</button>
-      <button class="ghost" onclick="startFreeCall('Study')">Study</button>
-      <button class="ghost" onclick="startFreeCall('Exercise')">Exercise</button>
-      <button class="ghost" onclick="startFreeCall('Eat')">Eat</button>
-      <button class="ghost" onclick="startFreeCall('Bath')">Bath</button>
-      <button class="ghost" onclick="startFreeCall('Sleep')">Sleep</button>
-      <button class="ghost" onclick="openPomodoroBlank()">🍅 Open Pomodoro</button>
-      <button class="ghost" onclick="shareMeet()">🔗 Share call (Meet)</button>
-    </div>
-    <p class="small">Ambient Lab hum is muted by default. Toggle & volume inside overlays.</p>
-  </div>
-
-  <!-- Tools -->
-  <div class="card">
-    <h2>🧮 & 🔍 Tools</h2>
-    <div class="row" style="justify-content:space-between;width:100%">
-      <button onclick="openCalc()">Open Calculator</button>
-      <button onclick="openSearch()">Open Quick Search</button>
-    </div>
-  </div>
-
-  <!-- Alarms -->
-  <div class="card">
-    <h2>⏰ Alarms</h2>
-    <div class="row">
-      <input id="alarmTime" type="time" step="60" value="08:00" style="width:120px">
-      <input id="alarmLabel" placeholder="Label (e.g., Stand up & stretch)" style="flex:1">
-      <select id="alarmTone" style="width:160px">
-        <option value="soft">Soft Digital 🔔</option>
-        <option value="beep">Penguin Beep-Boop 🐧</option>
-        <option value="ping">Pure Ping 🎧</option>
-      </select>
-      <button onclick="addAlarm()">Add</button>
-    </div>
-    <ul id="alarmList"></ul>
-  </div>
-
-  <!-- History (today) -->
-  <div class="card" style="width:764px;max-width:100%">
-    <h2>📅 History (Today)</h2>
-    <div id="historySummary" class="small">Total: 0 Pomodoros • 0 XP earned</div>
-    <ul id="historyList"></ul>
-  </div>
-
-  <!-- Data Export / Import -->
-  <div class="card" style="width:764px;max-width:100%">
-    <h2>💾 Data — Export / Import</h2>
-    <div class="row">
-      <button onclick="exportJSON()">Export JSON</button>
-      <button onclick="exportCSV()" class="ghost">Export CSV</button>
-      <input id="importFile" type="file" accept=".json,.csv" style="display:none" />
-      <button onclick="document.getElementById('importFile').click()">Import (JSON/CSV)</button>
-      <label class="small"><input id="overwriteImport" type="checkbox"> Overwrite instead of merge</label>
-    </div>
-    <p class="small">Exports/downloads use your browser’s Save dialog. Import merges by default.</p>
-  </div>
-</div>
-
-<!-- Edit Block Modal -->
-<div id="modal">
-  <div class="modalBox">
-    <h3>Edit Block</h3>
-    <input id="mTitle" placeholder="Title">
-    <div class="row" style="justify-content:space-between">
-      <label>Start <input id="mStart" type="time" step="900"></label>
-      <label>End <input id="mEnd" type="time" step="900"></label>
-    </div>
-    <label>Color <input id="mColor" type="color"></label>
-    <div class="modalActions">
-      <button onclick="saveModal()">💾 Save</button>
-      <button class="deleteBtn" onclick="deleteModal()">🗑 Delete</button>
-      <button class="ghost" onclick="closeModal()">✖ Cancel</button>
-    </div>
-  </div>
-</div>
-
-<!-- Pomodoro Overlay -->
-<div id="pomodoroOverlay" role="dialog" aria-modal="true">
-  <div id="pomodoroBox">
-    <div id="pomoHeader">
-      <div id="pomoTaskTitle">🍅 Pomodoro</div>
-      <div class="row" style="gap:6px">
-        <label class="small" style="display:flex;align-items:center;gap:6px">🔊 Ambient <input id="ambientToggle" type="checkbox"></label>
-        <input id="ambientVolume" class="slider" type="range" min="0" max="100" value="40" style="width:110px">
-        <button class="ghost-link" onclick="exitPomodoro()">✖ Close</button>
+      <div id="pomoScene" class="scene tech"></div>
+      <div id="pomoPhase" class="hint">Focus</div>
+      <div id="pomoTimer" class="big">25:00</div>
+      <div class="row wrap">
+        <button id="btnPause" class="warn">⏸ Pause</button>
+        <button id="btnDone" class="ok">✅ Done</button>
+        <button id="btnExit" class="danger">❌ Exit</button>
       </div>
     </div>
-    <div id="scene"></div>
-    <div class="phase" id="phaseText">Focus</div>
-    <div id="focusCircle"></div><div id="breakCircle"></div>
-    <div id="pomodoroTimer">25:00</div>
-    <div>
-      <button class="pbtn pause" onclick="togglePause()">⏸️ Pause</button>
-      <button class="pbtn done" onclick="completePomodoro()">✅ Done</button>
-      <button class="pbtn exit" onclick="exitPomodoro()">❌ Exit</button>
+  </div>
+
+  <!-- Calls Overlay & Mini -->
+  <div id="callOverlay" class="overlay hidden">
+    <div class="call-box">
+      <div class="overlay-head">
+        <div id="callTitle">📞 Penguin Call</div>
+        <div class="row wrap">
+          <label class="hint">🔊 Ambient <input id="callAmbientToggle" type="checkbox"></label>
+          <input id="callAmbientVolume" type="range" min="0" max="100" value="40">
+          <button id="callMin" class="ghost">➖ Minimize</button>
+          <button id="callClose" class="ghost">✖ Close</button>
+        </div>
+      </div>
+      <div id="callScene" class="scene tech"></div>
+      <div id="callTiny" class="hint hidden">Pomodoro: --:-- left</div>
     </div>
   </div>
-</div>
 
-<!-- Calls Overlay -->
-<div id="callOverlay" role="dialog" aria-modal="true">
-  <div id="callBox">
-    <div class="row" style="justify-content:space-between">
-      <div id="callTitle">📞 Penguin Call</div>
-      <div class="row" style="gap:6px">
-        <label class="small" style="display:flex;align-items:center;gap:6px">🔊 Ambient <input id="callAmbientToggle" type="checkbox"></label>
-        <input id="callAmbientVolume" class="slider" type="range" min="0" max="100" value="40" style="width:110px">
-        <button class="ghost-link" onclick="minimizeCall()">➖ Minimize</button>
-        <button class="ghost-link" onclick="closeCallOverlay()">✖ Close</button>
+  <div id="callMini" class="mini hidden">
+    <div class="mini-head">
+      <span>📞 Penguin Call</span>
+      <div>
+        <button id="miniRestore" class="ghost small">⛶</button>
+        <button id="miniClose" class="ghost small">✖</button>
       </div>
     </div>
-    <div id="sceneCall"></div>
-    <div id="callPomoTiny" class="small">Pomodoro: --:-- left</div>
-  </div>
-</div>
-
-<!-- Floating draggable call -->
-<div id="callWindow">
-  <div id="callHeader"><span>📞 Penguin Call</span><div><button id="restoreBtn" class="ghost-link" onclick="restoreCall()">⛶</button><button class="ghost-link" onclick="closeCall()">✖</button></div></div>
-  <div id="callBody">
-    <div id="callPenguin" class="penguin" style="margin:auto">
+    <div id="miniPenguin" class="penguin tiny">
       <div class="body"></div><div class="wing left"></div><div class="wing right"></div>
       <div class="eye left"></div><div class="eye right"></div><div class="beak"></div>
     </div>
-    <div id="callCaption" class="small" style="margin-top:6px">Chilling…</div>
-    <div id="callPomoTinyFloat" class="small">Pomodoro: --:-- left</div>
+    <div id="miniCaption" class="hint">Chilling…</div>
+    <div id="miniTiny" class="hint hidden">Pomodoro: --:-- left</div>
   </div>
-</div>
 
-<!-- Calculator Modal -->
-<div id="calcModal">
-  <div id="calcBox">
-    <h3 style="margin-top:0">Calculator</h3>
-    <input id="calcDisplay" readonly>
-    <div class="calcBtns" id="calcBtns">
-      <button data-k="7">7</button><button data-k="8">8</button><button data-k="9">9</button><button data-k="/">÷</button>
-      <button data-k="4">4</button><button data-k="5">5</button><button data-k="6">6</button><button data-k="*">×</button>
-      <button data-k="1">1</button><button data-k="2">2</button><button data-k="3">3</button><button data-k="-">−</button>
-      <button data-k="0">0</button><button data-k=".">.</button><button data-k="=">=</button><button data-k="+">+</button>
-      <button id="calcClear" style="grid-column:span 2;background:#374151">C</button>
-      <button id="calcDel" style="background:#374151">⌫</button>
-      <button onclick="closeCalc()" style="background:#374151">Close</button>
+  <!-- Calculator -->
+  <div id="calcModal" class="modal hidden">
+    <div class="calc-box">
+      <h3>Calculator</h3>
+      <input id="calcDisplay" readonly>
+      <div id="calcPad" class="calc-grid"></div>
+      <div class="row"><button id="calcClose" class="ghost">Close</button></div>
     </div>
   </div>
-</div>
 
-<!-- Search Modal -->
-<div id="searchModal">
-  <div id="searchBox">
-    <h3 style="margin-top:0">Quick Search</h3>
-    <div id="searchControls">
-      <input id="searchInput" placeholder="Search meanings, definitions, concepts…">
-      <button onclick="triggerSearch()">Search</button>
-    </div>
-    <iframe id="searchFrame" title="Search"></iframe>
-    <div style="text-align:center;margin-top:8px"><button onclick="closeSearch()">Close</button></div>
-  </div>
-</div>
-
-<!-- Alarm popup -->
-<div id="alarmPopup">
-  <div class="modalBox">
-    <h3>⏰ Alarm</h3>
-    <div id="alarmPopupMsg" style="margin:8px 0 12px">Time!</div>
-    <div class="modalActions">
-      <button onclick="snoozeAlarm()">Snooze 5 min</button>
-      <button class="ok" onclick="stopAlarm()">OK</button>
+  <!-- Search -->
+  <div id="searchModal" class="modal hidden">
+    <div class="search-box">
+      <h3>Quick Search</h3>
+      <div class="row">
+        <input id="searchInput" placeholder="Search definitions…">
+        <button id="searchGo" class="primary">Search</button>
+      </div>
+      <iframe id="searchFrame"></iframe>
+      <div class="row"><button id="searchClose" class="ghost">Close</button></div>
     </div>
   </div>
-</div>
 
-<!-- Settings Sidebar -->
-<div id="settingsOverlay">
-  <div id="settingsPanel">
-    <div class="row" style="justify-content:space-between;align-items:center"><h3 style="margin:0">⚙️ Settings</h3><button class="ghost" onclick="closeSettings()">✖</button></div>
-    <div class="badge">Saved automatically</div>
-    <hr style="border:none;border-top:1px solid #22314a">
-    <div class="settingRow"><span>Theme</span>
-      <select id="globalTheme">
-        <option value="tech">💻 Tech Lab</option>
-        <option value="arctic">❄️ Arctic Base</option>
-        <option value="sunset">🌅 Sunset Beach</option>
-        <option value="space">🌌 Space Nebula</option>
-      </select>
+  <!-- Alarm popup -->
+  <div id="alarmPopup" class="modal hidden">
+    <div class="modal-box">
+      <h3>⏰ Alarm</h3>
+      <div id="alarmMsg" class="pad">Time!</div>
+      <div class="row wrap">
+        <button id="alarmSnooze" class="primary">Snooze 5 min</button>
+        <button id="alarmOk" class="ghost">OK</button>
+      </div>
     </div>
-    <div class="settingRow"><span>Work (min)</span><input id="setWork" type="number" min="1" value="25"></div>
-    <div class="settingRow"><span>Short Break</span><input id="setShort" type="number" min="1" value="5"></div>
-    <div class="settingRow"><span>Long Break</span><input id="setLong" type="number" min="1" value="15"></div>
-    <div class="settingRow"><label><input id="autoNext" type="checkbox"> Auto-start next phase</label></div>
-    <div class="settingRow"><span>Sound volume</span><input id="globalVolume" type="range" min="0" max="100" value="40" class="slider"></div>
-    <div class="settingRow"><button class="ghost" onclick="recalcEconomy()">🪙 Recalculate XP & Coins</button></div>
-    <div class="settingRow"><button class="ghost" onclick="resetToday()">Reset Today Only</button><button class="deleteBtn" onclick="clearAllData()">Clear ALL</button></div>
   </div>
-</div>
 
-<!-- Light placeholder audio tags (ambient toggles use WebAudio for alarms) -->
-<audio id="sndStudy" loop src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABYAAAACAAAA"></audio>
-<audio id="sndExercise" loop src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABYAAAACAAAA"></audio>
-<audio id="sndEat" loop src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABYAAAACAAAA"></audio>
-<audio id="sndBath" loop src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABYAAAACAAAA"></audio>
-<audio id="sndSleep" loop src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABYAAAACAAAA"></audio>
-<audio id="sndChill" loop src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABYAAAACAAAA"></audio>
+  <!-- Settings Sidebar -->
+  <div id="settingsOverlay" class="settings hidden">
+    <aside id="settingsPanel" class="side">
+      <div class="side-head">
+        <h3>⚙️ Settings</h3>
+        <button id="settingsClose" class="ghost">✖</button>
+      </div>
+      <div class="side-section">
+        <label>Language
+          <select id="optLang">
+            <option value="en">English</option>
+            <option value="es">Español</option>
+          </select>
+        </label>
+      </div>
+      <div class="side-section">
+        <label>Theme
+          <select id="optTheme">
+            <option value="tech">💻 Tech Lab (default)</option>
+            <option value="arctic">❄️ Arctic Base</option>
+            <option value="sunset">🌅 Sunset Beach</option>
+            <option value="space">🌌 Space Nebula</option>
+          </select>
+        </label>
+      </div>
+      <div class="side-section">
+        <label>Sound Pack
+          <select id="optSound">
+            <option value="soft">Soft</option>
+            <option value="beep">Beep</option>
+            <option value="ping">Ping</option>
+          </select>
+        </label>
+      </div>
+      <div class="side-section">
+        <h4>Avatar</h4>
+        <div class="row center">
+          <div id="settingsAvatar" class="penguin">
+            <div class="body"></div><div class="wing left"></div><div class="wing right"></div>
+            <div class="eye left"></div><div class="eye right"></div><div class="beak"></div>
+          </div>
+        </div>
+        <input id="sName" placeholder="Name">
+        <div id="sColorChips" class="row wrap"></div>
+        <div class="row">
+          <select id="sHead" class="grow"></select>
+          <select id="sBody" class="grow"></select>
+          <select id="sEffect" class="grow"></select>
+        </div>
+        <button id="btnSaveSettingsAvatar" class="primary">Save Avatar</button>
+      </div>
+      <div class="side-section">
+        <h4>Pomodoro Defaults</h4>
+        <div class="row wrap">
+          <label>Work <input id="setWork" type="number" min="1" value="25"></label>
+          <label>Short <input id="setShort" type="number" min="1" value="5"></label>
+          <label>Long <input id="setLong" type="number" min="1" value="15"></label>
+          <label><input id="setAuto" type="checkbox"> Auto-next</label>
+        </div>
+        <button id="btnSaveDefaults" class="ghost">Save Defaults</button>
+      </div>
+      <div class="side-section">
+        <button id="btnResetToday" class="ghost">Reset Today</button>
+        <button id="btnClearAll" class="danger">Clear ALL</button>
+      </div>
+    </aside>
+  </div>
 
-<script>
-/* ------------------ Helpers & State ------------------ */
-const $=sel=>document.querySelector(sel);
-const toMin=t=>{const [h,m]=t.split(':').map(Number);return h*60+m}
-const fromMin=m=>`${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`
-const shade=(hex,p)=>{const c=parseInt(hex.slice(1),16);let r=c>>16,g=(c>>8)&255,b=c&255;const s=q=>Math.min(255,Math.max(0,q+Math.round(255*p/100)));return '#'+((1<<24)+(s(r)<<16)+(s(g)<<8)+s(b)).toString(16).slice(1)}
-
-let exp=parseFloat(localStorage.getItem("exp"))||0;
-let coins=parseFloat(localStorage.getItem("coins"))||0;
-let tasks=JSON.parse(localStorage.getItem("tasks")||"[]");
-let rewards=JSON.parse(localStorage.getItem("rewards")||"[]");
-let categories=JSON.parse(localStorage.getItem("categories")||"[]"); if(!categories.length) categories=["Self-Care","Study","Work","Other"];
-let categoryCounts=JSON.parse(localStorage.getItem("categoryCounts")||"{}");
-let daySchedule=JSON.parse(localStorage.getItem("daySchedule")||"[]");
-let alarms=JSON.parse(localStorage.getItem("alarms")||"[]");
-let ownedItems=JSON.parse(localStorage.getItem("ownedItems")||"{}");
-let equipped=JSON.parse(localStorage.getItem("equipped")||"{\"head\":\"\",\"body\":\"\",\"effect\":\"\"}");
-let equippedTheme=localStorage.getItem("equippedTheme")||"tech";
-let avatar=JSON.parse(localStorage.getItem("avatar")||"{\"name\":\"Pingu\",\"color\":\"#0ea5e9\"}");
-let history=JSON.parse(localStorage.getItem("history")||"{}");
-const today=new Date().toISOString().slice(0,10); if(!history[today]) history[today]=[];
-
-let focusMinutes=parseInt(localStorage.getItem("focusMinutes"))||25;
-let breakMinutes=parseInt(localStorage.getItem("breakMinutes"))||5;
-let longBreakMinutes=parseInt(localStorage.getItem("longBreakMinutes"))||15;
-let autoStartNext=(localStorage.getItem("autoStartNext")==="1");
-
-let globalVol=parseInt(localStorage.getItem("globalVolume")||"40");
-
-/* ------------------ Save/Render core ------------------ */
-function getLevel(){return Math.floor(exp/100)+1}
-function saveAll(){
-  localStorage.setItem("exp",exp.toFixed(2));
-  localStorage.setItem("coins",coins.toString());
-  localStorage.setItem("tasks",JSON.stringify(tasks));
-  localStorage.setItem("rewards",JSON.stringify(rewards));
-  localStorage.setItem("categories",JSON.stringify(categories));
-  localStorage.setItem("categoryCounts",JSON.stringify(categoryCounts));
-  localStorage.setItem("daySchedule",JSON.stringify(daySchedule));
-  localStorage.setItem("alarms",JSON.stringify(alarms));
-  localStorage.setItem("equipped",JSON.stringify(equipped));
-  localStorage.setItem("equippedTheme",equippedTheme);
-  localStorage.setItem("avatar",JSON.stringify(avatar));
-  localStorage.setItem("history",JSON.stringify(history));
-  localStorage.setItem("focusMinutes",focusMinutes);
-  localStorage.setItem("breakMinutes",breakMinutes);
-  localStorage.setItem("longBreakMinutes",longBreakMinutes);
-  localStorage.setItem("autoStartNext",autoStartNext?"1":"0");
-  localStorage.setItem("globalVolume",globalVol);
-}
-function updateProgress(){
-  $("#exp").textContent=exp.toFixed(2);
-  $("#level").textContent=getLevel();
-  $("#coins").textContent=coins.toFixed(2).replace(/\.00$/,'');
-  $("#progressBar").style.width=(exp%100)+"%";
-}
-
-/* ------------------ Tasks / Rewards ------------------ */
-function renderCategories(){const sel=$("#taskCat");sel.innerHTML="";categories.forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;sel.append(o)})}
-function addCategory(){const n=prompt("New category name:");if(!n)return;categories.push(n.trim());saveAll();renderCategories()}
-
-function renderTasks(){const ul=$("#taskList");ul.innerHTML="";
-  tasks.forEach((t,i)=>{
-    const li=document.createElement('li');
-    const left=document.createElement('div');left.style.display='flex';left.style.flexDirection='column';
-    const title=document.createElement('span');title.textContent=t.name;title.style.cursor="pointer";title.onclick=()=>editItem(tasks,i,"task");
-    const meta=document.createElement('span');meta.className="small";meta.textContent=`${t.category} • ${t.xp} XP`;
-    left.append(title,meta);
-    const right=document.createElement('div');
-    const f=document.createElement('button');f.textContent="🎮 Focus";f.onclick=()=>startPomodoro(i);
-    const d=document.createElement('button');d.textContent="✔";d.onclick=()=>completeTask(i);
-    const x=document.createElement('button');x.textContent="🗑";x.className="deleteBtn";x.onclick=()=>{tasks.splice(i,1);saveAll();renderTasks()};
-    right.append(f,d,x); li.append(left,right); ul.append(li);
-  });
-}
-function addTask(){const name=$("#taskName").value.trim(),xp=parseFloat($("#taskXP").value),cat=$("#taskCat").value;
-  if(!name||isNaN(xp))return alert("Enter task & XP");
-  tasks.push({name,xp,category:cat});$("#taskName").value="";$("#taskXP").value="";saveAll();renderTasks();
-}
-function editItem(list,i,what){const n=prompt("Edit name:",list[i].name);if(!n)return;list[i].name=n;saveAll();what==="task"?renderTasks():renderRewards()}
-function completeTask(i){
-  const before=getLevel();const g=parseFloat(tasks[i].xp);exp+=g;
-  const cat=tasks[i].category;categoryCounts[cat]=(categoryCounts[cat]||0)+1;
-  history[today].push({name:tasks[i].name,xp:g,pomodoros:0,category:cat});
-  tasks.splice(i,1);const after=getLevel();if(after>before){const gain=(after-before)*5;coins+=gain;alert(`🏆 Level Up! ${after}! (+${gain} coins)`)}
-  saveAll();updateProgress();renderTasks();renderHistory();
-}
-
-function renderRewards(){const ul=$("#rewardList");ul.innerHTML="";
-  rewards.forEach((r,i)=>{
-    const li=document.createElement('li');
-    const left=document.createElement('div');left.style.display='flex';left.style.flexDirection='column';
-    const title=document.createElement('span');title.textContent=r.name;title.style.cursor="pointer";title.onclick=()=>editItem(rewards,i,"reward");
-    const meta=document.createElement('span');meta.className="small";meta.textContent=`Costs ${r.cost} XP`;left.append(title,meta);
-    const right=document.createElement('div');
-    const b=document.createElement('button');b.textContent="Buy";b.onclick=()=>{if(exp<r.cost)return alert("Not enough XP");exp-=r.cost;saveAll();updateProgress()};
-    const x=document.createElement('button');x.textContent="🗑";x.className="deleteBtn";x.onclick=()=>{rewards.splice(i,1);saveAll();renderRewards()};
-    right.append(b,x);li.append(left,right);ul.append(li);
-  });
-}
-function addReward(){const n=$("#rewardName").value.trim(),c=parseFloat($("#rewardCost").value);if(!n||isNaN(c))return alert("Enter reward & cost");rewards.push({name:n,cost:c});$("#rewardName").value="";$("#rewardCost").value="";saveAll();renderRewards()}
-
-/* ------------------ Stats ------------------ */
-function renderStats(){
-  const s=$("#statsChart");s.innerHTML="";
-  const cats=Object.keys(categoryCounts).length?categoryCounts:{Study:38,Work:27,"Self-Care":17,Other:18};
-  const total=Object.values(cats).reduce((a,b)=>a+b,0)||1;let idx=0;
-  Object.entries(cats).forEach(([k,v])=>{
-    const pct=Math.round((v/total)*100);const row=document.createElement('div');row.className="statRow";
-    row.innerHTML=`<div class="statHeader"><span>${k}</span><span>${pct}%</span></div><div class="statOuter"><div class="statBar"></div></div>`;
-    s.append(row);setTimeout(()=>{row.querySelector(".statBar").style.width=pct+"%";row.querySelector(".statBar").style.background=`linear-gradient(90deg,hsl(${(idx*75)%360} 80% 60%),hsl(${(idx*75+45)%360} 80% 55%))`;idx++},60*idx);
-  });
-}
-
-/* ------------------ Planner ------------------ */
-const labels=$("#timeLabels"),layer=$("#eventLayer"),marker=$("#nowMarker"),pMark=$("#nowPenguin");
-function buildGrid(){
-  labels.innerHTML="";document.querySelectorAll(".gridLine").forEach(n=>n.remove());
-  const tl=$("#timeline");
-  for(let m=0;m<=1440;m+=15){
-    const top=m;const hh=String(Math.floor(m/60)).padStart(2,"0"),mm=String(m%60).padStart(2,"0");
-    const l=document.createElement('div');l.className="timeLabel";l.style.top=top+"px";if(mm==="00")l.textContent=`${hh}:00`;labels.append(l);
-    const g=document.createElement('div');g.className="gridLine"+((mm==="15"||mm==="45")?" q":"");g.style.top=top+"px";tl.append(g);
-  }
-}
-function addBlock(){const t=$("#schedTitle").value||"Task",s=$("#schedStart").value,e=$("#schedEnd").value,c=$("#schedColor").value;if(!s||!e)return alert("Set start & end");
-  if(toMin(e)<=toMin(s))return alert("End must be after start");daySchedule.push({title:t,start:s,end:e,color:c});saveAll();renderSchedule();
-}
-function addFromTasks(){if(!tasks.length)return alert("No tasks");let cur=toMin("08:00");tasks.forEach(t=>{const s=cur-(cur%15),e=s+60;daySchedule.push({title:t.name,start:fromMin(Math.min(s,1425)),end:fromMin(Math.min(e,1440)),color:"#60a5fa"});cur=e});saveAll();renderSchedule()}
-function renderSchedule(){layer.innerHTML="";daySchedule.forEach((b,i)=>{const s=toMin(b.start),e=toMin(b.end);const el=document.createElement('div');el.className="eventBlock";el.style.top=s+"px";el.style.height=(e-s)+"px";el.style.background=`linear-gradient(180deg,${b.color},${shade(b.color,-20)})`;el.style.borderColor=shade(b.color,-35);el.innerHTML=`<div class="eventTitle">${b.title}</div><div class="eventTime">${b.start}–${b.end}</div>`;el.onclick=()=>openModal(i);layer.append(el)});updateMarker()}
-function clearSchedule(){if(!confirm("Clear all blocks?"))return;daySchedule=[];saveAll();renderSchedule()}
-let editIndex=-1;function openModal(i){editIndex=i;const b=daySchedule[i];mTitle.value=b.title;mStart.value=b.start;mEnd.value=b.end;mColor.value=b.color;$("#modal").classList.add("show")}
-function closeModal(){$("#modal").classList.remove("show")}
-function saveModal(){if(editIndex<0)return;const t=mTitle.value.trim()||"Task",s=mStart.value,e=mEnd.value,c=mColor.value;if(!s||!e)return alert("Pick times");if(toMin(e)<=toMin(s))return alert("End must be after start");daySchedule[editIndex]={title:t,start:s,end:e,color:c};saveAll();closeModal();renderSchedule()}
-function deleteModal(){if(editIndex<0)return;if(!confirm("Delete block?"))return;daySchedule.splice(editIndex,1);saveAll();closeModal();renderSchedule()}
-function updateMarker(){const n=new Date(),y=n.getHours()*60+n.getMinutes();marker.style.top=y+"px";pMark.style.top=y+"px";$("#scheduleWrap").scrollTo({top:Math.max(0,y-200),behavior:"smooth"})} setInterval(updateMarker,60000)
-
-/* ------------------ Avatar / Shop ------------------ */
-function applyPenguin(el){el.style.setProperty('--p',avatar.color);el.style.setProperty('--accent',shade(avatar.color,-18));el.querySelectorAll('.acc').forEach(n=>n.remove());
-  const add=(slot,cls)=>{if(!cls)return;const d=document.createElement('div');d.className=`acc acc-${slot} ${cls}`;if(slot==="effect"){d.classList.add("acc-eff");d.style.animation="auraPulse 2.2s infinite ease-in-out";d.style.boxShadow=`0 0 18px 6px ${avatar.color}80, inset 0 0 12px ${avatar.color}66`}el.append(d)}
-  add("head",equipped.head);add("body",equipped.body);add("effect",equipped.effect);
-}
-function saveAvatar(){avatar.name=$("#nameInput").value.trim()||avatar.name;$("#avatarName").textContent=avatar.name;equipped.head=$("#equipHead").value;equipped.body=$("#equipBody").value;equipped.effect=$("#equipEffect").value;applyPenguin($("#penguinPreview"));applyPenguin($("#callPenguin"));saveAll();alert("Avatar updated!")}
-
-const chips=[...document.querySelectorAll('.chip')];let currentChip=avatar.color;chips.forEach(c=>{if(c.dataset.color===avatar.color)c.classList.add('active');c.onclick=()=>{chips.forEach(x=>x.classList.remove('active'));c.classList.add('active');currentChip=c.dataset.color;avatar.color=currentChip;applyPenguin($("#penguinPreview"));applyPenguin($("#callPenguin"));saveAll()}})
-ownedItems["theme_tech"]=true;
-
-const shopItems=[
-  {key:"beanie",name:"Beanie",cost:15,minLevel:1,slot:"head"},
-  {key:"glasses",name:"Glasses",cost:20,minLevel:3,slot:"head"},
-  {key:"headphones",name:"Headphones",cost:25,minLevel:5,slot:"head"},
-  {key:"cap",name:"Cap",cost:30,minLevel:6,slot:"head"},
-  {key:"crown",name:"Crown",cost:50,minLevel:10,slot:"head"},
-  {key:"scarf",name:"Scarf",cost:10,minLevel:1,slot:"body"},
-  {key:"bow",name:"Bowtie",cost:12,minLevel:1,slot:"body"},
-  {key:"cape",name:"Cape",cost:60,minLevel:12,slot:"body"},
-  {key:"mittens",name:"Mittens",cost:18,minLevel:2,slot:"body"},
-  {key:"aura",name:"Aura",cost:80,minLevel:12,slot:"effect"},
-  {key:"rainbow",name:"Rainbow Aura",cost:110,minLevel:16,slot:"effect"},
-  {key:"theme_tech",name:"Theme: Tech Lab",cost:0,minLevel:1,slot:"theme"},
-  {key:"theme_arctic",name:"Theme: Arctic Base",cost:20,minLevel:4,slot:"theme"},
-  {key:"theme_sunset",name:"Theme: Sunset Beach",cost:24,minLevel:6,slot:"theme"},
-  {key:"theme_space",name:"Theme: Space Nebula",cost:28,minLevel:8,slot:"theme"},
-];
-function themeFromKey(k){return k.endsWith("tech")?"tech":k.endsWith("arctic")?"arctic":k.endsWith("sunset")?"sunset":"space"}
-function themePreviewCss(key){const t=themeFromKey(key);if(t==="arctic")return "linear-gradient(180deg,#e0f7ff,#bde9ff)";if(t==="sunset")return "linear-gradient(180deg,#ff9966,#8e54e9)";if(t==="space")return "radial-gradient(circle at 30% 30%, #3b246b, #0a0a1a)";return "linear-gradient(180deg,#031a2e,#083b62)"}
-function renderShop(){const grid=$("#shopGrid");grid.innerHTML="";const lvl=getLevel();
-  shopItems.forEach(item=>{
-    const it=document.createElement('div');it.className="shop-item";if(lvl<item.minLevel)it.classList.add("locked");
-    const badge=document.createElement('div');badge.className="badgeCorner";badge.textContent=item.slot==="theme"?"Theme":`Lvl ${item.minLevel}`;it.append(badge);
-    const thumb=document.createElement('div');thumb.className="thumb";
-    if(item.slot==="theme"){const d=document.createElement('div');d.style.width="100%";d.style.height="72px";d.style.borderRadius="10px";d.style.border="1px solid #1e2e44";d.style.boxShadow="inset 0 0 12px #00eaff22";d.style.background=themePreviewCss(item.key);thumb.append(d)}
-    else{const demo=document.createElement('div');demo.className="penguin";demo.style.transform="scale(.55)";demo.innerHTML='<div class="body"></div><div class="wing left"></div><div class="wing right"></div><div class="eye left"></div><div class="eye right"></div><div class="beak"></div>';thumb.append(demo);applyPenguin(demo)}
-    it.append(thumb);
-    const name=document.createElement('div');name.className="name";name.textContent=item.name;
-    const meta=document.createElement('div');meta.className="meta";meta.textContent=(item.slot==="theme"?(ownedItems[item.key]?"Owned":"Theme • "+(item.cost||0)+" coins"):(`Cost: ${item.cost} • Slot: ${item.slot}`));
-    const btns=document.createElement('div');btns.className="btns";
-    const own=!!ownedItems[item.key];
-    if(item.slot==="theme"){
-      if(!own && item.cost>0) btns.append(btn("Buy",()=>buyItem(item)));
-      if(own || item.cost===0) btns.append(btn((equippedTheme===themeFromKey(item.key))?"Equipped":"Equip",()=>{ownedItems[item.key]=true;equippedTheme=themeFromKey(item.key);saveAll();renderShop();},(equippedTheme===themeFromKey(item.key))?"ghost":""));
-    }else{
-      if(!own) btns.append(btn("Buy",()=>buyItem(item)));
-      else btns.append(btn((equipped[item.slot]===item.key)?"Equipped":"Equip",()=>{equipped[item.slot]=item.key;applyPenguin($("#penguinPreview"));applyPenguin($("#callPenguin"));saveAll();renderShop()},(equipped[item.slot]===item.key)?"ghost":""));
-    }
-    if(own){const o=document.createElement('div');o.className="owned";o.textContent="Owned";it.append(o)}
-    it.append(name,meta,btns);grid.append(it);
-  })
-}
-function btn(t,fn,cls){const b=document.createElement('button');b.textContent=t;b.onclick=fn;if(cls)b.className=cls;return b}
-function buyItem(item){if(coins<item.cost)return alert("Not enough coins");coins-=item.cost;ownedItems[item.key]=true;saveAll();updateProgress();renderShop()}
-
-/* ------------------ Pomodoro ------------------ */
-const snd={Study:$("#sndStudy"),Exercise:$("#sndExercise"),Eat:$("#sndEat"),Bath:$("#sndBath"),Sleep:$("#sndSleep"),Chill:$("#sndChill")};
-let pomoIndex=null,pomoTimer=null,secondsLeft=0,pomoCount=0,isPaused=false,isBreak=false,cycleCount=0,currentMode="Chill";
-function openPomodoroBlank(){currentMode="Chill";$("#pomoTaskTitle").textContent="🍅 Pomodoro";$("#phaseText").textContent="Focus";$("#pomodoroOverlay").style.display="flex";$("#focusCircle").style.display="block";$("#breakCircle").style.display="none";secondsLeft=focusMinutes*60;updateTimer();clearInterval(pomoTimer);pomoTimer=setInterval(tickPomodoro,1000);buildSceneWithTheme(equippedTheme,true);playModeSound("Study");updateCallTiny()}
-function startPomodoro(i){currentMode="Study";pomoIndex=i;pomoCount=0;secondsLeft=focusMinutes*60;isPaused=false;isBreak=false;$("#pomoTaskTitle").textContent=`🍅 Focus: ${tasks[i].name}`;$("#phaseText").textContent="Focus";$("#pomodoroOverlay").style.display="flex";$("#focusCircle").style.display="block";$("#breakCircle").style.display="none";updateTimer();clearInterval(pomoTimer);pomoTimer=setInterval(tickPomodoro,1000);buildSceneWithTheme(equippedTheme,true);playModeSound("Study");updateCallTiny()}
-function tickPomodoro(){if(isPaused)return;secondsLeft--;if(secondsLeft<=0){clearInterval(pomoTimer);if(!isBreak){pomoCount++;cycleCount++;(cycleCount%4===0)?startLongBreak():startBreak()}else startNextFocus()}updateTimer();updateCallTiny()}
-function startBreak(){isBreak=true;secondsLeft=breakMinutes*60;$("#focusCircle").style.display="none";$("#breakCircle").style.display="block";$("#phaseText").textContent="Short break";playModeSound("Chill");if(autoStartNext)resume()}
-function startLongBreak(){isBreak=true;secondsLeft=longBreakMinutes*60;$("#focusCircle").style.display="none";$("#breakCircle").style.display="block";$("#phaseText").textContent="Long break";playModeSound("Chill");if(autoStartNext)resume()}
-function startNextFocus(){isBreak=false;secondsLeft=focusMinutes*60;$("#focusCircle").style.display="block";$("#breakCircle").style.display="none";$("#phaseText").textContent="Focus";playModeSound("Study");if(autoStartNext)resume()}
-function resume(){clearInterval(pomoTimer);pomoTimer=setInterval(tickPomodoro,1000)}
-function updateTimer(){const m=Math.floor(secondsLeft/60),s=secondsLeft%60;$("#pomodoroTimer").textContent=`${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`}
-function togglePause(){isPaused=!isPaused;Object.values(snd).forEach(a=>isPaused?a.pause():a.play().catch(()=>{}))}
-function exitPomodoro(){clearInterval(pomoTimer);$("#pomodoroOverlay").style.display="none";pomoIndex=null;secondsLeft=0;isPaused=false;isBreak=false;Object.values(snd).forEach(a=>{a.pause();a.currentTime=0});updateCallTiny()}
-function completePomodoro(){clearInterval(pomoTimer);$("#pomodoroOverlay").style.display="none";Object.values(snd).forEach(a=>{a.pause();a.currentTime=0});if(pomoIndex===null){updateCallTiny();return}
-  const before=getLevel();const ok=confirm(`Finish "${tasks[pomoIndex].name}"?\nPomodoros: ${pomoCount}`);if(ok){const xp=parseFloat(tasks[pomoIndex].xp);exp+=xp;const coinGain=pomoCount*1;coins+=coinGain;const cat=tasks[pomoIndex].category;categoryCounts[cat]=(categoryCounts[cat]||0)+1;const after=getLevel();if(after>before){const gain=(after-before)*5;coins+=gain;alert(`🏆 Level Up! ${after}! (+${gain} coins)`)}history[today].push({name:tasks[pomoIndex].name,xp:xp,pomodoros:pomoCount,category:cat});tasks.splice(pomoIndex,1);saveAll();renderTasks();updateProgress();renderHistory()}
-  pomoIndex=null;secondsLeft=0;isPaused=false;isBreak=false;updateCallTiny()
-}
-
-/* ------------------ Calls ------------------ */
-let callMode="Chill";
-function startFreeCall(mode){callMode=mode||"Chill";$("#callTitle").textContent=`📞 ${avatar.name} — ${callMode}`;$("#callOverlay").style.display="flex";buildCallScene(callMode);applyPenguin($("#callPenguin"));updateCallTiny()}
-function closeCallOverlay(){$("#callOverlay").style.display="none";updateCallTiny()}
-function minimizeCall(){$("#callOverlay").style.display="none";$("#callWindow").style.display="flex";setPenguinActivity($("#callPenguin"),callMode,false);$("#callCaption").textContent=captionFor(callMode);updateCallTiny()}
-function restoreCall(){$("#callWindow").style.display="none";$("#callOverlay").style.display="flex";buildCallScene(callMode);updateCallTiny()}
-function closeCall(){$("#callWindow").style.display="none";updateCallTiny()}
-(function(){let drag=false,ox=0,oy=0;$("#callHeader").addEventListener("mousedown",e=>{drag=true;const r=$("#callWindow").getBoundingClientRect();ox=e.clientX-r.left;oy=e.clientY-r.top;document.body.style.userSelect='none'});window.addEventListener("mousemove",e=>{if(!drag)return;const w=$("#callWindow");w.style.left=(e.clientX-ox)+'px';w.style.top=(e.clientY-oy)+'px';w.style.right='auto';w.style.bottom='auto'});window.addEventListener("mouseup",()=>{drag=false;document.body.style.userSelect=''})})();
-
-function captionFor(m){return({Study:"Studying with you…",Exercise:"Let’s move! 💪",Eat:"Snack break 🍣",Bath:"Self-care 🛁",Sleep:"Resting 😴",Chill:"Chilling…"})[m]||"Chilling…"}
-let wingTimer=null;function setPenguinActivity(el,mode,full){clearInterval(wingTimer);const L=el.querySelector('.wing.left'),R=el.querySelector('.wing.right'),B=el.querySelector('.body'),E=[...el.querySelectorAll('.eye')];let t=0,a=full?1:.4;wingTimer=setInterval(()=>{t++;if(mode==="Study"){L.style.transform=`rotate(${-12+Math.sin(t/3)*3*a}deg)`;R.style.transform=`rotate(${12-Math.sin(t/3)*3*a}deg)`;B.style.transform=`translateY(${Math.sin(t/6)*1.5*a}px)`}else if(mode==="Exercise"){L.style.transform=`rotate(${-30+Math.sin(t/4)*20*a}deg)`;R.style.transform=`rotate(${30-Math.sin(t/4)*20*a}deg)`;B.style.transform=`translateY(${Math.abs(Math.sin(t/5))*6*a}px)`}else if(mode==="Eat"){B.style.transform=`translateY(${Math.abs(Math.sin(t/7))*3*a}px)`}else if(mode==="Bath"){L.style.transform=`rotate(${-20+Math.sin(t/4)*12*a}deg)`;R.style.transform=`rotate(${20-Math.sin(t/4)*12*a}deg)`;B.style.transform=`translateY(${Math.sin(t/3)*2.5*a}px)`}else if(mode==="Sleep"){B.style.transform=`translateY(${Math.sin(t/12)*1.2*a}px)`}else{L.style.transform=`rotate(${-12+Math.sin(t/8)*5*a}deg)`;R.style.transform=`rotate(${12-Math.sin(t/8)*5*a}deg)`;B.style.transform=`translateY(${Math.sin(t/10)*2*a}px)`}if(full&&t%120===0){E.forEach(e=>{e.style.height='4px';setTimeout(()=>e.style.height='14px',180)})}},50)}
-
-function buildCallScene(mode){const sc=$("#sceneCall");while(sc.firstChild)sc.removeChild(sc.firstChild);
-  // tech lab blend layers
-  sc.append(divClass("lab-bg"));sc.append(divClass("lab-circuits"));sc.append(divClass("lab-pulse"));
-  // foreground gradient by activity
-  const fg=document.createElement('div');fg.style.position="absolute";fg.style.inset="0";fg.style.borderRadius="14px";
-  fg.style.background=({"Study":"linear-gradient(180deg,rgba(12,26,46,.9),rgba(10,19,48,.9))","Exercise":"radial-gradient(circle at 50% 20%, rgba(15,30,54,.9), rgba(7,17,36,.9))","Eat":"linear-gradient(180deg,rgba(42,14,26,.9),rgba(53,26,46,.9))","Bath":"linear-gradient(180deg,rgba(12,34,48,.9),rgba(11,47,56,.9))","Sleep":"radial-gradient(60% 50% at 50% 20%,rgba(27,22,68,.92),rgba(8,9,24,.92))","Chill":"linear-gradient(180deg,rgba(7,20,32,.9),rgba(10,30,52,.9))"}[mode]);
-  sc.append(fg);
-  // penguin
-  const P=document.createElement('div');P.style.position='absolute';P.style.left='220px';P.style.top='95px';const pg=document.createElement('div');pg.className='penguin';pg.innerHTML='<div class="body"></div><div class="wing left"></div><div class="wing right"></div><div class="eye left"></div><div class="eye right"></div><div class="beak"></div>';P.append(pg);sc.append(P);applyPenguin(pg);setPenguinActivity(pg,mode,true)
-  // props quick
-  if(mode==="Exercise"){const left=180,y=200;sc.append(rect(left-6,y,12,18,"linear-gradient(180deg,#9ca3af,#4b5563)"));sc.append(rect(left+54,y,12,18,"linear-gradient(180deg,#9ca3af,#4b5563)"));sc.append(rect(left,y+6,60,6,"linear-gradient(180deg,#6b7280,#374151)"))}
-  if(mode==="Bath"){bubble(230,210,sc);bubble(280,205,sc);bubble(320,215,sc);bubble(265,195,sc)}
-  if(mode==="Eat"){sc.append(rect(240,210,80,22,"linear-gradient(180deg,#ffd7a6,#f59e0b)",12))}
-  if(mode==="Sleep"){stars(sc);zzz(sc,350,120);zzz(sc,365,100)}
-}
-function divClass(c){const d=document.createElement('div');d.className=c;return d}
-function rect(x,y,w,h,bg,br=10){const d=document.createElement('div');Object.assign(d.style,{position:"absolute",left:x+"px",top:y+"px",width:w+"px",height:h+"px",background:bg,borderRadius:br+"px"});return d}
-function bubble(x,y,sc){const b=rect(x,y,14,14,"radial-gradient(circle,#bdefff,#7dd3fc)",999);b.style.opacity=.9;b.animate([{transform:"translateY(0)"},{transform:"translateY(-24px)"}],{duration:1800+Math.random()*800,iterations:Infinity});sc.append(b)}
-function stars(sc){for(let i=0;i<32;i++){const s=rect(Math.random()*560,Math.random()*160,2,2,"#c7d2fe",1);s.style.opacity=Math.random();sc.append(s)}}
-function zzz(sc,x,y){const z=document.createElement("div");z.textContent="Z";Object.assign(z.style,{position:"absolute",left:x+"px",top:y+"px",color:"#b4c6ff",fontWeight:"700",opacity:.8});sc.append(z);z.animate([{transform:"translateY(0)",opacity:.8},{transform:"translateY(-14px)",opacity:.2}],{duration:2200,iterations:Infinity})}
-function buildSceneWithTheme(){ // Pomodoro scene uses same tech blend + desk
-  const sc=$("#scene");while(sc.firstChild)sc.removeChild(sc.firstChild);
-  sc.append(divClass("lab-bg"));sc.append(divClass("lab-circuits"));sc.append(divClass("lab-pulse"));
-  sc.append(rect(110,160,340,18,"linear-gradient(180deg,#0e233b,#0a1728)",8));
-  const P=document.createElement('div');P.style.position='absolute';P.style.left='220px';P.style.top='90px';const pg=document.createElement('div');pg.className='penguin';pg.innerHTML='<div class="body"></div><div class="wing left"></div><div class="wing right"></div><div class="eye left"></div><div class="eye right"></div><div class="beak"></div>';P.append(pg);sc.append(P);applyPenguin(pg);setPenguinActivity(pg,"Study",true);
-}
-
-/* Micro timer handling (in Call views) */
-function updateCallTiny(){
-  const running = (pomoTimer && secondsLeft>0);
-  const text = running ? `Pomodoro: ${String(Math.floor(secondsLeft/60)).padStart(2,"0")}:${String(secondsLeft%60).padStart(2,"0")} left` : "";
-  $("#callPomoTiny").style.display = running ? "block":"none";
-  $("#callPomoTiny").textContent = text||"";
-  $("#callPomoTinyFloat").style.display = running ? "block":"none";
-  $("#callPomoTinyFloat").textContent = text||"";
-}
-
-/* Play ambient mode sound (simple loop) */
-function playModeSound(mode){try{Object.values(snd).forEach(a=>{a.pause();a.currentTime=0});const a=snd[mode];a.volume=(globalVol/100)*.2;a.play().catch(()=>{})}catch{}}
-
-/* ------------------ Calculator ------------------ */
-const calcModal=$("#calcModal");const calcDisplay=$("#calcDisplay");let calcExpr="";
-function openCalc(){calcModal.classList.add("show");calcDisplay.value=calcExpr}
-function closeCalc(){calcModal.classList.remove("show")}
-function calcUpdate(){calcDisplay.value=calcExpr}
-$("#calcBtns").addEventListener("click",e=>{const k=e.target.getAttribute("data-k");if(!k)return;if(k==="="){if(!calcExpr.trim())return;try{const safe=calcExpr.replace(/[^0-9+\-*/().]/g,"");calcExpr=String(Function(`'use strict';return (${safe})`)())}catch{calcExpr="Error"}calcUpdate();return}calcExpr+=k;calcUpdate()})
-document.addEventListener("keydown",e=>{if(calcModal.classList.contains("show")){if("0123456789.+-*/()".includes(e.key)){calcExpr+=e.key;calcUpdate()}if(e.key==="Enter"){e.preventDefault();const safe=calcExpr.replace(/[^0-9+\-*/().]/g,"");try{calcExpr=String(Function(`'use strict';return (${safe})`)())}catch{calcExpr="Error"}calcUpdate()}if(e.key==="Backspace"){calcExpr=calcExpr.slice(0,-1);calcUpdate()}}})
-$("#calcClear").addEventListener("click",()=>{calcExpr="";calcUpdate()})
-$("#calcDel").addEventListener("click",()=>{calcExpr=calcExpr.slice(0,-1);calcUpdate()})
-
-/* ------------------ Quick Search ------------------ */
-const searchModal=$("#searchModal"),searchInput=$("#searchInput"),searchFrame=$("#searchFrame");
-function openSearch(){searchModal.classList.add("show");searchInput.focus();if(searchInput.value.trim())triggerSearch()}
-function closeSearch(){searchModal.classList.remove("show")}
-function triggerSearch(){const q=searchInput.value.trim();if(!q)return;const url="https://www.google.com/search?q="+encodeURIComponent(q);try{searchFrame.src=url}catch{window.open(url,"_blank")}}
-searchInput.addEventListener("keydown",e=>{if(e.key==="Enter")triggerSearch()})
-
-/* ------------------ Alarms (WebAudio) ------------------ */
-let audioCtx=null;function ensureCtx(){ if(!audioCtx){ try{audioCtx=new (window.AudioContext||window.webkitAudioContext)(); }catch{} } }
-document.addEventListener("click",ensureCtx,{once:true}); // unlock audio
-
-function renderAlarms(){const ul=$("#alarmList");ul.innerHTML="";alarms.forEach((a,i)=>{const li=document.createElement('li');li.innerHTML=`<span class="badge">${a.enabled?"On":"Off"}</span> <span style="margin-left:8px" class="small">${a.time}</span> ${a.label?("• "+a.label):""}`;const box=document.createElement('div');const t=document.createElement('button');t.textContent=a.enabled?"Disable":"Enable";t.className=a.enabled?"":"ghost";t.onclick=()=>{a.enabled=!a.enabled;saveAll();renderAlarms()};const e=document.createElement('button');e.textContent="✎";e.onclick=()=>editAlarm(i);const x=document.createElement('button');x.textContent="🗑";x.className="deleteBtn";x.onclick=()=>{alarms.splice(i,1);saveAll();renderAlarms()};box.append(t,e,x);li.append(box);ul.append(li)})}
-function addAlarm(){const t=$("#alarmTime").value,label=$("#alarmLabel").value.trim(),tone=$("#alarmTone").value;if(!t)return alert("Pick time");alarms.push({time:t,label,tone,enabled:true,lastFired:null});saveAll();renderAlarms()}
-function editAlarm(i){const a=alarms[i];const nt=prompt("Time (HH:MM)",a.time);if(!nt)return;const nl=prompt("Label",a.label||"");if(nl===null)return;let tn=prompt("Tone (soft|beep|ping)",a.tone);if(!tn)return;a.time=nt;a.label=nl;a.tone=tn;saveAll();renderAlarms()}
-let alarmPlaying=null,alarmData=null;function fireAlarm(a){$("#alarmPopupMsg").textContent=(a.label||"Alarm!")+" — "+a.time;$("#alarmPopup").classList.add("show");playTone(a.tone);alarmData=a}
-function stopAlarm(){$("#alarmPopup").classList.remove("show");if(alarmPlaying){alarmPlaying.stop();alarmPlaying.disconnect();alarmPlaying=null}}
-function snoozeAlarm(){stopAlarm();if(!alarmData)return;const m=toMin(alarmData.time)+5;alarmData.time=fromMin(m%1440);alarmData.lastFired=null;saveAll();renderAlarms()}
-function checkAlarms(){const now=new Date();const cur=`${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}`;alarms.forEach(a=>{if(!a.enabled)return;if(a.time===cur && a.lastFiredanalysis
-// ... continuation of alarms logic ...
-if(a.time===cur && a.lastFired!==today+cur){
-    a.lastFired=today+cur;
-    fireAlarm(a);
-  }
-});
-}
-setInterval(checkAlarms,60000);
-function playTone(type){
-  ensureCtx();
-  if(!audioCtx) return;
-  const osc=audioCtx.createOscillator();
-  const gain=audioCtx.createGain();
-  osc.connect(gain);gain.connect(audioCtx.destination);
-  osc.type="sine";
-  if(type==="beep")osc.frequency.setValueAtTime(880,audioCtx.currentTime);
-  else if(type==="ping")osc.frequency.setValueAtTime(1760,audioCtx.currentTime);
-  else osc.frequency.setValueAtTime(440,audioCtx.currentTime);
-  gain.gain.setValueAtTime(0.2,audioCtx.currentTime);
-  osc.start();alarmPlaying=osc;
-}
-
-/* ------------------ History ------------------ */
-function renderHistory(){
-  const list=$("#historyList");list.innerHTML="";
-  const arr=history[today]||[];
-  let totalP=0,totalXP=0;
-  arr.forEach(e=>{
-    const li=document.createElement('li');
-    li.textContent=`${e.name} (${e.category||'Uncategorized'}) — ${e.pomodoros} Pomodoro(s) +${e.xp} XP`;
-    list.append(li);
-    totalP+=e.pomodoros;totalXP+=e.xp;
-  });
-  $("#historySummary").textContent=`Total: ${totalP} Pomodoros • ${totalXP.toFixed(2)} XP earned`;
-}
-function clearTodayHistory(){
-  if(confirm("Clear today's history?")){
-    history[today]=[];
-    saveAll();
-    renderHistory();
-  }
-}
-
-/* ------------------ Export / Import ------------------ */
-function exportJSON(){
-  const data={
-    exp,coins,tasks,rewards,categories,categoryCounts,daySchedule,alarms,
-    ownedItems,equipped,equippedTheme,avatar,history,focusMinutes,breakMinutes,longBreakMinutes,autoStartNext,globalVol
-  };
-  const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement("a");
-  a.href=url;a.download="penguin_data.json";a.click();
-  URL.revokeObjectURL(url);
-}
-function exportCSV(){
-  let csv="type,name,value\n";
-  tasks.forEach(t=>csv+=`task,${t.name},${t.xp}\n`);
-  rewards.forEach(r=>csv+=`reward,${r.name},${r.cost}\n`);
-  daySchedule.forEach(b=>csv+=`block,${b.title},${b.start}-${b.end}\n`);
-  alarms.forEach(a=>csv+=`alarm,${a.label},${a.time}\n`);
-  const blob=new Blob([csv],{type:"text/csv"});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement("a");
-  a.href=url;a.download="penguin_data.csv";a.click();
-  URL.revokeObjectURL(url);
-}
-$("#importFile").addEventListener("change",e=>{
-  const f=e.target.files[0];if(!f)return;
-  const reader=new FileReader();
-  reader.onload=()=>{
-    try{
-      if(f.name.endsWith(".json")){
-        const data=JSON.parse(reader.result);
-        if($("#overwriteImport").checked){
-          Object.assign(window,data);
-        }else{
-          tasks.push(...(data.tasks||[]));
-          rewards.push(...(data.rewards||[]));
-          alarms.push(...(data.alarms||[]));
-          daySchedule.push(...(data.daySchedule||[]));
-        }
-        saveAll();renderAll();
-        alert("✅ Data imported.");
-      }else{
-        alert("CSV import not supported yet. Use JSON instead.");
-      }
-    }catch(err){alert("Import failed: "+err);}
-  };
-  reader.readAsText(f);
-});
-
-/* ------------------ Settings ------------------ */
-$("#gearBtn").addEventListener("click",()=>{$("#settingsOverlay").classList.add("show")});
-function closeSettings(){$("#settingsOverlay").classList.remove("show")}
-function saveSettings(){
-  focusMinutes=parseInt($("#focusInput").value)||25;
-  breakMinutes=parseInt($("#breakInput").value)||5;
-  longBreakMinutes=parseInt($("#longBreakInput").value)||15;
-  saveAll();
-  alert("Pomodoro settings saved!");
-}
-function recalcEconomy(){
-  let xp=0,c=0;
-  Object.values(history).flat().forEach(h=>{xp+=h.xp;c+=h.pomodoros;});
-  exp=xp;coins=c;
-  saveAll();updateProgress();
-  alert("Economy recalculated based on history.");
-}
-function resetToday(){if(confirm("Reset today only?")){history[today]=[];saveAll();renderHistory();}}
-function clearAllData(){
-  if(!confirm("This clears EVERYTHING!"))return;
-  localStorage.clear();
-  location.reload();
-}
-
-/* ------------------ Init ------------------ */
-function renderAll(){
-  renderCategories();
-  renderTasks();
-  renderRewards();
-  renderStats();
-  renderSchedule();
-  renderAlarms();
-  renderShop();
-  renderHistory();
-  updateProgress();
-  applyPenguin($("#penguinPreview"));
-  applyPenguin($("#callPenguin"));
-}
-renderAll();
-buildGrid();
-updateMarker();
-
-/* ------------------ Meet Sharing ------------------ */
-function shareMeet(){
-  const url="https://meet.google.com/new";
-  window.open(url,"_blank");
-}
-
-/* ------------------ Daily Reset ------------------ */
-function dailyResetCheck(){
-  const last=localStorage.getItem("lastDate");
-  const now=new Date().toISOString().slice(0,10);
-  if(last!==now){
-    localStorage.setItem("lastDate",now);
-    // reset today-specific stats but keep history
-    categoryCounts={};
-    daySchedule=[];
-    alarms.forEach(a=>a.lastFired=null);
-    saveAll();
-    renderAll();
-  }
-}
-dailyResetCheck();
-</script>
+  <script src="script.js"></script>
 </body>
 </html>
