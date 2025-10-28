@@ -1,593 +1,508 @@
 /* ============================================================
-   Penguin Companion — XP Planner  (v3.2)
-   Everything works offline; designed for Firebase sync later.
+   Penguin Companion — XP Planner  (v3.2 JS)
    ============================================================ */
 
-/* ---------- Helpers ---------- */
-const $ = sel => document.querySelector(sel);
-const $$ = sel => document.querySelectorAll(sel);
-const uuid = () => Math.random().toString(36).substr(2, 9);
-const save = (k, v) => localStorage.setItem(k, JSON.stringify(v));
-const load = (k, def) => JSON.parse(localStorage.getItem(k) || JSON.stringify(def));
+(function(){
+'use strict';
 
-/* ---------- Global State ---------- */
-let data = load("penguinData", {
-  xp: 0,
-  coins: 0,
-  level: 1,
-  tasks: [],
-  rewards: [],
-  alarms: [],
-  blocks: [],
-  settings: {
-    theme: "tech",
-    lang: "en",
-    autoNext: true,
-    sound: "soft",
-    volume: 0.4,
-  },
-  avatar: {
-    name: "Pingu",
-    color: "#8155ff",
-    head: "none",
-    body: "none",
-    effect: "none",
-  },
-  shop: { owned: [] },
-  history: [],
-  race: null,
-});
+/* ------------------------------------------------------------
+   Helpers
+------------------------------------------------------------ */
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+const storage = (k,v) => v===undefined ? JSON.parse(localStorage.getItem(k)||'null') : localStorage.setItem(k,JSON.stringify(v));
 
-function commit() {
-  save("penguinData", data);
+function fmtTime(sec){
+  const m = Math.floor(sec/60).toString().padStart(2,'0');
+  const s = Math.floor(sec%60).toString().padStart(2,'0');
+  return `${m}:${s}`;
 }
 
-/* ============================================================
-   XP & LEVEL SYSTEM
-   ============================================================ */
-function addXP(x) {
-  data.xp += x;
-  const req = 10 + (data.level - 1) * 5;
-  if (data.xp >= req) {
-    data.xp -= req;
-    data.level++;
-    data.coins += 10;
-    toast(`🎉 Level up! Level ${data.level} reached. +10 Coins`);
-  }
-  renderHeader();
-  commit();
-}
-function renderHeader() {
-  $("#levelText").textContent =
-    `Level ${data.level} • XP ${data.xp.toFixed(1)} • Coins ${data.coins}`;
-  const req = 10 + (data.level - 1) * 5;
-  $("#xpBar").style.width = `${(data.xp / req) * 100}%`;
+/* ------------------------------------------------------------
+   State
+------------------------------------------------------------ */
+let data = storage('penguinData') || {
+  xp:0, level:1, coins:0,
+  tasks:[], rewards:[], history:[],
+  alarms:[], schedule:[], categories:{},
+  settings:{theme:'techlab',lang:'en',volume:0.6},
+  avatar:{name:'Pingu',color:'purple',head:'none',body:'none',effect:'none'},
+  shop:{owned:[],accessories:[],themes:[],effects:[]}
+};
+let pomodoro = {focus:25, short:5, long:15, mode:'focus', running:false, seconds:1500, timer:null, task:null};
+let raceRoom=null; // for Race mode
+let miniGameActive=false;
+
+/* ------------------------------------------------------------
+   Init
+------------------------------------------------------------ */
+window.addEventListener('DOMContentLoaded',init);
+
+function init(){
+  buildShop(); renderAll();
+  bindUI();
+  buildScheduleGrid();
+  updateNowMarker();
+  setInterval(updateNowMarker,60*1000);
 }
 
-/* ============================================================
-   TASKS
-   ============================================================ */
-const taskList = $("#taskList");
-function renderTasks() {
-  taskList.innerHTML = "";
-  data.tasks.forEach(t => {
-    const li = document.createElement("li");
-    li.className = "item";
-    li.innerHTML = `
-      <div class="left">
-        <b>${t.name}</b>
-        <div class="meta">${t.category || "Other"} • ${t.xp} XP</div>
-      </div>
-      <div class="btn-row">
-        <button class="btn-focus">🎮 Focus</button>
-        <button class="btn-done">✓</button>
-        <button class="btn-del">🗑️</button>
-      </div>`;
-    li.querySelector(".btn-focus").onclick = () => startPomodoro(t);
-    li.querySelector(".btn-done").onclick = () => {
-      addXP(Number(t.xp));
-      data.tasks = data.tasks.filter(x => x.id !== t.id);
-      commit();
-      renderTasks();
-      updateStats();
-    };
-    li.querySelector(".btn-del").onclick = () => {
-      data.tasks = data.tasks.filter(x => x.id !== t.id);
-      commit();
-      renderTasks();
-      updateStats();
-    };
-    taskList.append(li);
-  });
-  updateStats();
-}
-$("#taskAdd").onclick = () => {
-  const n = $("#taskName").value.trim();
-  const c = $("#taskCategory").value;
-  const x = parseFloat($("#taskXP").value) || 0.25;
-  if (!n) return;
-  data.tasks.push({ id: uuid(), name: n, category: c, xp: x });
-  $("#taskName").value = "";
-  commit();
-  renderTasks();
-};
-
-/* ============================================================
-   REWARDS
-   ============================================================ */
-const rewardList = $("#rewardList");
-function renderRewards() {
-  rewardList.innerHTML = "";
-  data.rewards.forEach(r => {
-    const li = document.createElement("li");
-    li.className = "item";
-    li.innerHTML = `
-      <div class="left"><b>${r.name}</b><div class="meta">${r.cost} XP</div></div>
-      <div class="btn-row">
-        <button class="btn-focus">Buy</button>
-        <button class="btn-del">🗑️</button>
-      </div>`;
-    li.querySelector(".btn-focus").onclick = () => {
-      if (data.xp >= r.cost) {
-        data.xp -= r.cost;
-        toast(`Bought ${r.name}!`);
-        renderHeader();
-        commit();
-      } else toast("Not enough XP!");
-    };
-    li.querySelector(".btn-del").onclick = () => {
-      data.rewards = data.rewards.filter(x => x.id !== r.id);
-      commit();
-      renderRewards();
-    };
-    rewardList.append(li);
-  });
-}
-$("#rewardAdd").onclick = () => {
-  const n = $("#rewardName").value.trim();
-  const cost = parseFloat($("#rewardCost").value) || 1;
-  if (!n) return;
-  data.rewards.push({ id: uuid(), name: n, cost });
-  $("#rewardName").value = "";
-  commit();
-  renderRewards();
-};
-
-/* ============================================================
-   CATEGORY STATS
-   ============================================================ */
-function updateStats() {
-  const cats = { Study: 0, Work: 0, "Self-Care": 0, Other: 0 };
-  data.tasks.forEach(t => (cats[t.category] = (cats[t.category] || 0) + 1));
-  const total = Object.values(cats).reduce((a, b) => a + b, 0) || 1;
-  $("#countStudy").textContent = cats.Study;
-  $("#countWork").textContent = cats.Work;
-  $("#countSelfCare").textContent = cats["Self-Care"];
-  $("#countOther").textContent = cats.Other;
-  $("#barStudy").style.width = (cats.Study / total) * 100 + "%";
-  $("#barWork").style.width = (cats.Work / total) * 100 + "%";
-  $("#barSelfCare").style.width = (cats["Self-Care"] / total) * 100 + "%";
-  $("#barOther").style.width = (cats.Other / total) * 100 + "%";
-}
-
-/* ============================================================
-   POMODORO ENGINE
-   ============================================================ */
-let pomo = {
-  phase: "focus",
-  seconds: 0,
-  timer: null,
-  running: false,
-  task: null,
-};
-function startPomodoro(t) {
-  pomo.task = t;
-  $("#pomoTaskTitle").textContent = t.name || "Focus";
-  $("#pomoOverlay").classList.remove("hidden");
-  setPomoPhase("focus");
-}
-function setPomoPhase(ph) {
-  pomo.phase = ph;
-  const mins = parseInt($("#pomoFocus").value);
-  const smins = parseInt($("#pomoShort").value);
-  const lmins = parseInt($("#pomoLong").value);
-  pomo.seconds = (ph === "focus" ? mins : ph === "short" ? smins : lmins) * 60;
-  renderPomoTime();
-}
-function renderPomoTime() {
-  const m = Math.floor(pomo.seconds / 60)
-    .toString()
-    .padStart(2, "0");
-  const s = (pomo.seconds % 60).toString().padStart(2, "0");
-  $("#pomoTime").textContent = `${m}:${s}`;
-  $("#pomoMicro").textContent = `${m} min ${s} s left`;
-  $("#callMiniMicro").textContent = `${m}:${s}`;
-}
-function tickPomo() {
-  if (pomo.running && pomo.seconds > 0) {
-    pomo.seconds--;
-    renderPomoTime();
-  } else if (pomo.running && pomo.seconds <= 0) {
-    pomo.running = false;
-    clearInterval(pomo.timer);
-    if (pomo.phase === "focus") {
-      addXP(Number(pomo.task?.xp || 1));
-      if (data.settings.autoNext) setPomoPhase("short");
-      toast("Focus session done!");
-    } else toast("Break ended!");
-  }
-}
-$("#pomoStart").onclick = () => {
-  if (!pomo.running) {
-    pomo.running = true;
-    pomo.timer = setInterval(tickPomo, 1000);
-    $("#pomoMicro").classList.remove("hidden");
-    $("#callMiniMicro").classList.remove("hidden");
-  }
-};
-$("#pomoPause").onclick = () => {
-  pomo.running = false;
-  clearInterval(pomo.timer);
-};
-$("#pomoDone").onclick = () => {
-  addXP(Number(pomo.task?.xp || 1));
-  $("#pomoOverlay").classList.add("hidden");
-  $("#pomoMicro").classList.add("hidden");
-  pomo.running = false;
-  clearInterval(pomo.timer);
-};
-$("#pomoExit").onclick = () => {
-  $("#pomoOverlay").classList.add("hidden");
-  $("#pomoMicro").classList.add("hidden");
-  pomo.running = false;
-  clearInterval(pomo.timer);
-};
-
-/* ============================================================
-   CALL OVERLAY  (Activities)
-   ============================================================ */
-const call = { open: false, mode: "Study" };
-const backdrop = $("#callBackdrop");
-const penguin = $("#callPenguin");
-const props = {
-  Study: ".prop-pen",
-  Exercise: ".prop-bar",
-  Eat: ".prop-spoon",
-  Bath: ".prop-bath",
-  Sleep: ".prop-zzz",
-};
-function openCall(mode) {
-  call.mode = mode;
-  $("#callOverlay").classList.remove("hidden");
-  $("#callModeLabel").textContent = mode;
-  backdrop.className = `backdrop tech ${mode.toLowerCase()}`;
-  penguin.querySelectorAll(".prop").forEach(p => (p.style.opacity = 0));
-  if (props[mode]) penguin.querySelector(props[mode]).style.opacity = 1;
-}
-["Study", "Exercise", "Eat", "Bath", "Sleep"].forEach(m => {
-  $("#call" + m).onclick = () => openCall(m);
-});
-$("#openCall").onclick = () => openCall("Study");
-$("#closeCall").onclick = () => $("#callOverlay").classList.add("hidden");
-$("#callMin").onclick = () => {
-  $("#callOverlay").classList.add("hidden");
-  $("#callMini").classList.remove("hidden");
-  $("#callMiniText").textContent = `${call.mode} with ${data.avatar.name}`;
-};
-$("#callMiniRestore").onclick = () => {
-  $("#callOverlay").classList.remove("hidden");
-  $("#callMini").classList.add("hidden");
-};
-$("#callMiniClose").onclick = () => $("#callMini").classList.add("hidden");
-
-/* ============================================================
-   CALCULATOR + SEARCH MODALS
-   ============================================================ */
-$("#openCalc").onclick = () => {
-  $("#calcModal").classList.add("show");
-  $("#calcFrame").srcdoc = `
-    <html><body style="background:#09131f;color:white;font-family:sans-serif;padding:10px">
-    <input id='expr' style='width:90%;font-size:22px;background:#1b2a44;color:#fff;border:0;padding:8px;border-radius:8px'><button onclick='try{r.innerText=eval(expr.value)}catch(e){r.innerText="Err"}'>=</button>
-    <div id='r' style='margin-top:10px;font-size:24px'></div></body></html>`;
-};
-$("#closeCalc").onclick = () => $("#calcModal").classList.remove("show");
-
-$("#openSearch").onclick = () => {
-  $("#searchModal").classList.add("show");
-  $("#searchFrame").src = "https://duckduckgo.com";
-};
-$("#closeSearch").onclick = () => $("#searchModal").classList.remove("show");
-
-/* ============================================================
-   ALARMS
-   ============================================================ */
-function renderAlarms() {
-  const ul = $("#alarmList");
-  ul.innerHTML = "";
-  data.alarms.forEach(a => {
-    const li = document.createElement("li");
-    li.className = "item";
-    li.innerHTML = `
-      <div class="left"><b>${a.time}</b><div class="meta">${a.label}</div></div>
-      <div class="btn-row">
-        <button class="btn-focus on">${a.on ? "On" : "Off"}</button>
-        <button class="btn-done">✎</button>
-        <button class="btn-del">🗑️</button>
-      </div>`;
-    li.querySelector(".btn-focus").onclick = () => {
-      a.on = !a.on;
-      renderAlarms();
-      commit();
-    };
-    li.querySelector(".btn-done").onclick = () => {
-      const newL = prompt("Edit label", a.label);
-      if (newL) a.label = newL;
-      commit();
-      renderAlarms();
-    };
-    li.querySelector(".btn-del").onclick = () => {
-      data.alarms = data.alarms.filter(x => x.id !== a.id);
-      commit();
-      renderAlarms();
-    };
-    ul.append(li);
-  });
-}
-$("#addAlarm").onclick = () => {
-  const t = $("#alarmTime").value;
-  const l = $("#alarmLabel").value || "Alarm";
-  const s = $("#alarmSound").value;
-  if (!t) return;
-  data.alarms.push({ id: uuid(), time: t, label: l, sound: s, on: true });
-  commit();
-  renderAlarms();
-};
-setInterval(() => {
-  const now = new Date();
-  const time = now.toTimeString().slice(0, 5);
-  data.alarms.forEach(a => {
-    if (a.on && a.time === time) {
-      toast(`⏰ ${a.label}`);
-      $("#alarmBeep").play();
-      a.on = false;
-      renderAlarms();
-      commit();
-      setTimeout(() => {
-        if (confirm("Snooze 5 min?"))
-          a.time = new Date(now.getTime() + 5 * 60000)
-            .toTimeString()
-            .slice(0, 5);
-        a.on = true;
-        commit();
-        renderAlarms();
-      }, 5000);
-    }
-  });
-}, 10000);
-
-/* ============================================================
-   TIME-BLOCKING
-   ============================================================ */
-function renderSchedule() {
-  const grid = $("#scheduleGrid");
-  grid.innerHTML = "";
-  data.blocks.forEach(b => {
-    const div = document.createElement("div");
-    div.className = "block";
-    div.style.background = b.color;
-    div.style.top = timeToY(b.start) + "px";
-    div.style.height = timeToY(b.end) - timeToY(b.start) + "px";
-    div.innerHTML = `${b.title}<span class='edit'>✎</span>`;
-    div.querySelector(".edit").onclick = () => {
-      const newT = prompt("Edit block", b.title);
-      if (newT) b.title = newT;
-      commit();
-      renderSchedule();
-    };
-    grid.append(div);
-  });
-}
-function timeToY(t) {
-  const [h, m] = t.split(":").map(Number);
-  return (h * 60 + m) * 0.6; // 1min=0.6px for ~1440px height
-}
-$("#addBlock").onclick = () => {
-  const b = {
-    id: uuid(),
-    title: $("#blockTitle").value || "Block",
-    start: $("#blockStart").value,
-    end: $("#blockEnd").value,
-    color: $("#blockColor").value,
-  };
-  data.blocks.push(b);
-  commit();
-  renderSchedule();
-};
-$("#addFromTasks").onclick = () => {
-  if (!data.tasks.length) return toast("No tasks");
-  const t = data.tasks[0];
-  data.blocks.push({
-    id: uuid(),
-    title: t.name,
-    start: $("#blockStart").value,
-    end: $("#blockEnd").value,
-    color: "#4f83ff",
-  });
-  commit();
-  renderSchedule();
-};
-$("#clearSchedule").onclick = () => {
-  if (confirm("Clear schedule?")) {
-    data.blocks = [];
-    commit();
-    renderSchedule();
-  }
-};
-$("#clearToday").onclick = () => {
-  if (confirm("Clear today’s history?")) {
-    data.history = [];
-    commit();
-  }
-};
-setInterval(() => {
-  const n = new Date();
-  const top = timeToY(n.toTimeString().slice(0, 5));
-  $("#nowMarker").style.top = top + "px";
-}, 60000);
-
-/* ============================================================
-   SHOP & AVATAR
-   ============================================================ */
-const accessories = [
-  "Headphones","Glasses","Hat","Crown","Beanie",
-  "Scarf","Tie","Bow","Headband","Cap"
-];
-const themes = ["tech","arctic","sunset","space"];
-const effects = ["sparkle","bubbles","hearts"];
-function renderShop() {
-  const accC = $("#shopAccessories");
-  const thC = $("#shopThemes");
-  const efC = $("#shopEffects");
-  accC.innerHTML = themes.innerHTML = efC.innerHTML = "";
-  accessories.forEach(a => addTile(accC, a, 5));
-  themes.forEach(t => addTile(thC, t, 20));
-  effects.forEach(e => addTile(efC, e, 15));
-  $("#coinsText").textContent = data.coins;
-  $("#ownedCount").textContent = data.shop.owned.length;
-}
-function addTile(container, name, cost) {
-  const owned = data.shop.owned.includes(name);
-  const div = document.createElement("div");
-  div.className = "tile";
-  div.innerHTML = `
-    <div class="thumb"></div>
-    <div class="row">
-      <div>${name}</div>
-      <button class="buy">${owned ? "Owned" : cost + "💰"}</button>
-    </div>`;
-  const btn = div.querySelector(".buy");
-  btn.disabled = owned;
-  btn.onclick = () => {
-    if (data.coins >= cost) {
-      data.coins -= cost;
-      data.shop.owned.push(name);
-      toast(`Bought ${name}`);
-      commit();
-      renderShop();
-    } else toast("Not enough coins");
-  };
-  container.append(div);
-}
-
-/* ============================================================
-   SETTINGS SIDEBAR
-   ============================================================ */
-$("#openSettings").onclick = () => $("#settingsPanel").classList.add("show");
-$("#closeSettings").onclick = () => $("#settingsPanel").classList.remove("show");
-$("#optTheme").onchange = e => {
-  data.settings.theme = e.target.value;
-  document.body.dataset.theme = e.target.value;
-  commit();
-};
-$("#optLang").onchange = e => {
-  data.settings.lang = e.target.value;
-  commit();
-};
-$("#optSound").onchange = e => (data.settings.sound = e.target.value);
-$("#optVolume").oninput = e => (data.settings.volume = e.target.value / 100);
-$("#saveAvatarSettings").onclick = () => {
-  data.avatar.name = $("#setAName").value || "Pingu";
-  data.avatar.color = $("#setAColor").value;
-  data.avatar.head = $("#setAHead").value;
-  data.avatar.body = $("#setABody").value;
-  data.avatar.effect = $("#setAEffect").value;
-  toast("Avatar saved!");
-  commit();
-};
-$("#clearAllData").onclick = () => {
-  if (confirm("Erase all data?")) {
-    localStorage.clear();
-    location.reload();
-  }
-};
-
-/* ============================================================
-   RACE (Kahoot-like)
-   ============================================================ */
-const raceDiv = $("#raceFull"), raceContent = $("#raceContent");
-$("#raceClose").onclick = () => raceDiv.classList.remove("show");
-
-function startRaceHost() {
-  const code = Math.floor(Math.random() * 90000 + 10000);
-  data.race = { code, players: [data.avatar.name], host: true, leaderboard: {} };
-  raceDiv.classList.add("show");
-  raceContent.innerHTML = `
-    <div class='race-panel'>
-      <h2>Share this code</h2>
-      <div class='race-code'>${code}</div>
-      <div class='race-participants' id='racePlayers'><div class='part-chip'>${data.avatar.name}</div></div>
-      <button id='raceStart' class='primary'>Start Pomodoro Race</button>
-    </div>`;
-  $("#raceStart").onclick = startRacePomodoro;
-}
-function startRaceJoin() {
-  const code = prompt("Enter race code:");
-  if (!code) return;
-  data.race = { code, host: false };
-  raceDiv.classList.add("show");
-  raceContent.innerHTML = `
-    <div class='race-panel'><h2>Joined race ${code}</h2><div>Waiting for host...</div></div>`;
-}
-function startRacePomodoro() {
-  raceContent.innerHTML = `
-    <div class='race-panel'>
-      <h2>Pomodoro Race Started!</h2>
-      <div id='raceTimer' style='font-size:42px;margin:20px'>25:00</div>
-      <div>Work with your penguin! XP will determine leaderboard.</div>
-    </div>`;
-  let secs = 1500;
-  const timer = setInterval(() => {
-    const m = String(Math.floor(secs / 60)).padStart(2, "0");
-    const s = String(secs % 60).padStart(2, "0");
-    $("#raceTimer").textContent = `${m}:${s}`;
-    secs--;
-    if (secs < 0) {
-      clearInterval(timer);
-      raceContent.innerHTML = `<div class='race-panel'><h2>Leaderboard</h2><p>${data.avatar.name}: +2 XP</p></div>`;
-      addXP(2);
-    }
-  }, 1000);
-}
-window.startRaceHost = startRaceHost;
-window.startRaceJoin = startRaceJoin;
-
-/* ============================================================
-   UTILITIES
-   ============================================================ */
-function toast(msg) {
-  const d = document.createElement("div");
-  d.textContent = msg;
-  d.style.position = "fixed";
-  d.style.bottom = "20px";
-  d.style.right = "20px";
-  d.style.background = "#0a1421";
-  d.style.padding = "10px 14px";
-  d.style.borderRadius = "10px";
-  d.style.boxShadow = "0 4px 12px rgba(0,0,0,.4)";
-  document.body.append(d);
-  setTimeout(() => d.remove(), 3000);
-}
-
-/* ============================================================
-   INIT
-   ============================================================ */
-function init() {
-  document.body.dataset.theme = data.settings.theme;
-  renderHeader();
+/* ------------------------------------------------------------
+   Render
+------------------------------------------------------------ */
+function renderAll(){
   renderTasks();
   renderRewards();
-  renderAlarms();
-  renderSchedule();
+  renderStats();
+  renderHistory();
+  renderAvatar();
   renderShop();
+  renderHeader();
 }
-init();
+
+function renderHeader(){
+  $('#levelLabel').textContent = `Level ${data.level}`;
+  $('#xpLabel').textContent = `• XP ${data.xp.toFixed(2)}`;
+  $('#coinLabel').textContent = `• Coins ${data.coins}`;
+  const pct = Math.min(100,(data.xp%100));
+  $('#xpProgress').style.width = `${pct}%`;
+}
+
+/* ------------------------------------------------------------
+   Tasks
+------------------------------------------------------------ */
+function renderTasks(){
+  const list = $('#taskList'); list.innerHTML='';
+  data.tasks.forEach((t,i)=>{
+    const li = $('#tplTaskItem').content.cloneNode(true);
+    li.querySelector('.title').textContent=t.name;
+    li.querySelector('.category').textContent=t.category;
+    li.querySelector('.xp').textContent=`${t.xp} XP`;
+    li.querySelector('.btn-focus').onclick=()=>startFocusTask(i);
+    li.querySelector('.btn-complete').onclick=()=>completeTask(i);
+    li.querySelector('.btn-delete').onclick=()=>{data.tasks.splice(i,1);save();renderTasks();};
+    li.querySelector('.btn-edit').onclick=()=>editTask(i);
+    list.appendChild(li);
+  });
+}
+function editTask(i){
+  const t=data.tasks[i];
+  const n=prompt('Edit task name',t.name);
+  if(!n)return;
+  t.name=n; save(); renderTasks();
+}
+function addTask(){
+  const name=$('#taskName').value.trim();
+  const xp=parseFloat($('#taskXp').value)||1;
+  const cat=$('#taskCategory').value;
+  if(!name)return;
+  data.tasks.push({name,xp,category:cat});
+  $('#taskName').value=''; $('#taskXp').value='';
+  save(); renderTasks();
+}
+function startFocusTask(i){
+  pomodoro.task=data.tasks[i];
+  openPomodoro();
+}
+function completeTask(i){
+  const t=data.tasks[i];
+  gainXP(t.xp);
+  data.history.push(`${t.name} (${t.category}) +${t.xp}XP`);
+  renderHistory(); save();
+}
+
+/* ------------------------------------------------------------
+   Rewards
+------------------------------------------------------------ */
+function renderRewards(){
+  const list=$('#rewardList'); list.innerHTML='';
+  data.rewards.forEach((r,i)=>{
+    const li=$('#tplRewardItem').content.cloneNode(true);
+    li.querySelector('.title').textContent=r.name;
+    li.querySelector('.cost').textContent=`Cost ${r.cost} XP`;
+    li.querySelector('.btn-buy').onclick=()=>buyReward(i);
+    li.querySelector('.btn-delete').onclick=()=>{data.rewards.splice(i,1);save();renderRewards();};
+    li.querySelector('.btn-edit').onclick=()=>editReward(i);
+    list.appendChild(li);
+  });
+}
+function addReward(){
+  const name=$('#rewardName').value.trim();
+  const cost=parseFloat($('#rewardCost').value)||1;
+  if(!name)return;
+  data.rewards.push({name,cost});
+  $('#rewardName').value='';$('#rewardCost').value='';
+  save();renderRewards();
+}
+function editReward(i){
+  const r=data.rewards[i];
+  const n=prompt('Edit reward',r.name);
+  if(!n)return;
+  r.name=n; save();renderRewards();
+}
+function buyReward(i){
+  const r=data.rewards[i];
+  if(data.xp>=r.cost){
+    data.xp-=r.cost;
+    alert(`Enjoy your ${r.name}!`);
+    save(); renderHeader();
+  } else alert('Not enough XP');
+}
+
+/* ------------------------------------------------------------
+   Stats & History
+------------------------------------------------------------ */
+function renderStats(){
+  const el=$('#statsBars'); el.innerHTML='';
+  const cats={};
+  data.tasks.forEach(t=>cats[t.category]=(cats[t.category]||0)+1);
+  Object.entries(cats).forEach(([k,v])=>{
+    const t=$('#tplStatBar').content.cloneNode(true);
+    t.querySelector('.stat-label').textContent=`${k}: ${v}`;
+    const fill=t.querySelector('.fill');
+    fill.style.width=Math.min(100,v*10)+'%';
+    el.appendChild(t);
+  });
+}
+function renderHistory(){
+  const h=$('#historyList'); h.innerHTML='';
+  data.history.slice(-20).reverse().forEach(line=>{
+    const li=$('#tplHistoryItem').content.cloneNode(true);
+    li.querySelector('.pill').textContent=line;
+    h.appendChild(li);
+  });
+  $('#historySummary').textContent=`Total: ${data.history.length} entries • ${data.xp.toFixed(2)} XP earned`;
+}
+
+/* ------------------------------------------------------------
+   Pomodoro
+------------------------------------------------------------ */
+function openPomodoro(){
+  $('#pomodoroOverlay').classList.remove('hidden');
+  pomodoro.seconds=pomodoro.focus*60;
+  updatePomodoroDisplay();
+}
+function updatePomodoroDisplay(){
+  $('#pomTimer').textContent=fmtTime(pomodoro.seconds);
+}
+function tickPomodoro(){
+  if(!pomodoro.running)return;
+  pomodoro.seconds--;
+  updatePomodoroDisplay();
+  $('#miniPomodoroTick').textContent=fmtTime(pomodoro.seconds);
+  if(pomodoro.seconds<=0){
+    pomodoro.running=false;
+    gainXP(1);
+    nextPhase();
+  }
+}
+function startPomodoro(){
+  pomodoro.running=true;
+  clearInterval(pomodoro.timer);
+  pomodoro.timer=setInterval(tickPomodoro,1000);
+}
+function pausePomodoro(){pomodoro.running=false;}
+function donePomodoro(){gainXP(1);closePomodoro();}
+function closePomodoro(){
+  clearInterval(pomodoro.timer);
+  pomodoro.running=false;
+  $('#pomodoroOverlay').classList.add('hidden');
+}
+function nextPhase(){
+  if(pomodoro.mode==='focus'){
+    pomodoro.mode='break';
+    pomodoro.seconds=pomodoro.short*60;
+  } else {
+    pomodoro.mode='focus';
+    pomodoro.seconds=pomodoro.focus*60;
+  }
+  startPomodoro();
+}
+
+/* ------------------------------------------------------------
+   Calls
+------------------------------------------------------------ */
+function callPenguin(mode='Study'){
+  $('#callOverlay').classList.remove('hidden');
+  $('#callMode').textContent=mode;
+  $('#callName').textContent=data.avatar.name;
+  $('#miniCallBubble').classList.add('hidden');
+  renderCallScene(mode);
+}
+function renderCallScene(mode){
+  const stage=$('#callStage');
+  stage.innerHTML='';
+  const p=document.createElement('div');
+  p.className='avatar-3d';
+  stage.appendChild(p);
+  stage.style.background=({
+    Study:'linear-gradient(#0b1220,#1e2b4d)',
+    Exercise:'linear-gradient(#0b1220,#003)',
+    Eat:'linear-gradient(#2b0b0b,#200)',
+    Bath:'linear-gradient(#0b2025,#0b3055)',
+    Sleep:'linear-gradient(#01010a,#020025)'
+  })[mode]||'#111';
+}
+function minimizeCall(){
+  $('#callOverlay').classList.add('hidden');
+  $('#miniCallBubble').classList.remove('hidden');
+}
+function closeCall(){
+  $('#callOverlay').classList.add('hidden');
+  $('#miniCallBubble').classList.add('hidden');
+}
+
+/* ------------------------------------------------------------
+   Alarms
+------------------------------------------------------------ */
+function renderAlarms(){
+  const list=$('#alarmList'); list.innerHTML='';
+  data.alarms.forEach((a,i)=>{
+    const li=$('#tplAlarmItem').content.cloneNode(true);
+    li.querySelector('.time').textContent=a.time;
+    li.querySelector('.label').textContent=a.label;
+    const t=li.querySelector('.btn-toggle');
+    t.textContent=a.on?'On':'Off';
+    t.onclick=()=>{a.on=!a.on;save();renderAlarms();};
+    li.querySelector('.btn-delete').onclick=()=>{data.alarms.splice(i,1);save();renderAlarms();};
+    li.querySelector('.btn-edit').onclick=()=>editAlarm(i);
+    li.querySelector('.btn-snooze').onclick=()=>snoozeAlarm(i);
+    list.appendChild(li);
+  });
+}
+function addAlarm(){
+  const time=$('#alarmTime').value;
+  const label=$('#alarmLabel').value||'Alarm';
+  const sound=$('#alarmSound').value;
+  if(!time)return;
+  data.alarms.push({time,label,sound,on:true});
+  save(); renderAlarms();
+}
+function editAlarm(i){
+  const a=data.alarms[i];
+  const n=prompt('Edit label',a.label);
+  if(n)a.label=n;
+  save();renderAlarms();
+}
+function snoozeAlarm(i){
+  const a=data.alarms[i];
+  const [h,m]=a.time.split(':').map(Number);
+  const t=new Date();
+  t.setHours(h);t.setMinutes(m+5);
+  a.time=`${t.getHours().toString().padStart(2,'0')}:${t.getMinutes().toString().padStart(2,'0')}`;
+  save();renderAlarms();
+}
+setInterval(checkAlarms,1000*20);
+function checkAlarms(){
+  const now=new Date();
+  const hm=`${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+  data.alarms.forEach(a=>{
+    if(a.on && a.time===hm){
+      playSound(a.sound);
+      alert(a.label);
+      a.on=false;
+    }
+  });
+  save();
+}
+
+/* ------------------------------------------------------------
+   Tools
+------------------------------------------------------------ */
+$('#btnOpenCalc')?.addEventListener('click',()=>$('#calcModal').classList.remove('hidden'));
+$('#btnCalcClose')?.addEventListener('click',()=>$('#calcModal').classList.add('hidden'));
+$('#btnOpenSearch')?.addEventListener('click',()=>$('#searchModal').classList.remove('hidden'));
+$('#btnSearchClose')?.addEventListener('click',()=>$('#searchModal').classList.add('hidden'));
+$('#btnSearchGo')?.addEventListener('click',()=>{
+  const q=encodeURIComponent($('#searchQuery').value);
+  $('#searchFrame').src=`https://duckduckgo.com/?q=${q}`;
+});
+
+/* ------------------------------------------------------------
+   Schedule
+------------------------------------------------------------ */
+function buildScheduleGrid(){
+  const g=$('#dayGrid');
+  for(let h=0;h<24;h++){
+    for(let q=0;q<4;q++){
+      const slot=document.createElement('div');
+      const t=`${h.toString().padStart(2,'0')}:${(q*15).toString().padStart(2,'0')}`;
+      slot.className='slot'; slot.dataset.time=t;
+      slot.textContent=t;
+      g.appendChild(slot);
+    }
+  }
+}
+function updateNowMarker(){
+  const now=new Date();
+  const minutes=now.getHours()*60+now.getMinutes();
+  const pct=minutes/(24*60)*100;
+  $('#nowMarker').style.top=pct+'%';
+}
+
+/* ------------------------------------------------------------
+   Shop
+------------------------------------------------------------ */
+function buildShop(){
+  const accs=[
+    {name:'Beanie',type:'head',cost:5},
+    {name:'Glasses',type:'head',cost:8},
+    {name:'Headphones',type:'head',cost:12},
+    {name:'Cap',type:'head',cost:10},
+    {name:'Crown',type:'head',cost:20},
+    {name:'Mask',type:'head',cost:7},
+    {name:'Goggles',type:'head',cost:9},
+    {name:'Scarf',type:'body',cost:4},
+    {name:'Bowtie',type:'body',cost:6},
+    {name:'Cape',type:'body',cost:15}
+  ];
+  data.shop.accessories=accs;
+  const grid=$('#shopAccessories'); grid.innerHTML='';
+  accs.forEach(a=>{
+    const c=$('#tplShopItem').content.cloneNode(true);
+    c.querySelector('.name').textContent=a.name;
+    const btn=c.querySelector('.btn-buy');
+    btn.onclick=()=>buyAccessory(a);
+    grid.appendChild(c);
+  });
+}
+function buyAccessory(a){
+  if(data.coins>=a.cost){
+    data.coins-=a.cost;
+    data.shop.owned.push(a.name);
+    alert(`Bought ${a.name}!`);
+    save(); renderShop();
+  }else alert('Not enough coins');
+}
+function renderShop(){
+  $('#coinCount').textContent=data.coins;
+  $('#ownedCount').textContent=data.shop.owned.length;
+}
+
+/* ------------------------------------------------------------
+   Avatar
+------------------------------------------------------------ */
+function renderAvatar(){
+  $('#avatarNameInline').textContent=data.avatar.name;
+  $('#avatarPreview').style.background=avatarColor(data.avatar.color);
+}
+function avatarColor(c){
+  const map={blue:'#4c8bf5',red:'#f55454',green:'#33cc7a',purple:'#8155ff',gold:'#e7c156'};
+  return `radial-gradient(circle at 30% 30%, ${map[c]||'#8155ff'}, #000)`;
+}
+
+/* ------------------------------------------------------------
+   XP + Level
+------------------------------------------------------------ */
+function gainXP(x){
+  data.xp+=x;
+  if(data.xp>=data.level*100){
+    data.level++; data.coins+=5;
+    alert('Level up!');
+  }
+  save(); renderHeader();
+}
+
+/* ------------------------------------------------------------
+   Race mode (tab sync simulation)
+------------------------------------------------------------ */
+window.addEventListener('storage',e=>{
+  if(e.key==='raceEvent')handleRaceEvent(JSON.parse(e.newValue||'{}'));
+});
+function broadcastRace(ev){localStorage.setItem('raceEvent',JSON.stringify(ev));}
+
+function openRaceLobby(){ $('#raceLobby').classList.remove('hidden'); }
+function closeRaceLobby(){ $('#raceLobby').classList.add('hidden'); }
+
+function createRace(){
+  const code=Math.random().toString(36).substr(2,5).toUpperCase();
+  raceRoom={code,players:[data.avatar.name]};
+  $('#raceCode').textContent=code;
+  broadcastRace({type:'create',code,host:data.avatar.name});
+}
+function joinRace(){
+  const code=$('#joinCode').value.trim().toUpperCase();
+  broadcastRace({type:'join',code,name:data.avatar.name});
+}
+function handleRaceEvent(ev){
+  if(ev.type==='create'){
+    raceRoom={code:ev.code,players:[ev.host]};
+    $('#raceCode').textContent=ev.code;
+  }
+  if(ev.type==='join' && raceRoom && ev.code===raceRoom.code){
+    raceRoom.players.push(ev.name);
+    renderRaceParticipants();
+  }
+  if(ev.type==='start' && raceRoom && ev.code===raceRoom.code){
+    openRaceArena();
+  }
+}
+function renderRaceParticipants(){
+  const ul=$('#raceParticipants'); ul.innerHTML='';
+  raceRoom.players.forEach(p=>{
+    const li=document.createElement('li'); li.textContent=p; ul.appendChild(li);
+  });
+}
+function startRace(){
+  broadcastRace({type:'start',code:raceRoom.code});
+  openRaceArena();
+}
+function openRaceArena(){
+  $('#raceArena').classList.remove('hidden');
+  $('#raceRoomTag').textContent='Code: '+raceRoom.code;
+  buildRacePlayers();
+}
+function buildRacePlayers(){
+  const ul=$('#racePlayerList'); ul.innerHTML='';
+  raceRoom.players.forEach(p=>{
+    const li=document.createElement('li'); li.textContent=p; ul.appendChild(li);
+  });
+}
+function leaveRace(){
+  $('#raceArena').classList.add('hidden');
+  raceRoom=null;
+}
+
+/* Shared Pomodoro for race */
+let racePom={running:false,mode:'focus',seconds:1500,timer:null};
+function tickRacePom(){
+  if(!racePom.running)return;
+  racePom.seconds--;
+  $('#raceTimer').textContent=fmtTime(racePom.seconds);
+  if(racePom.seconds<=0){
+    racePom.running=false;
+    if(racePom.mode==='focus'){
+      racePom.mode='break';
+      racePom.seconds=300;
+      startMiniGame();
+    }else{
+      endMiniGame();
+      racePom.mode='focus';
+      racePom.seconds=1500;
+    }
+    racePom.running=true;
+  }
+}
+function startRacePom(){
+  racePom.running=true;
+  clearInterval(racePom.timer);
+  racePom.timer=setInterval(tickRacePom,1000);
+}
+function pauseRacePom(){racePom.running=false;}
+function resetRacePom(){racePom.seconds=1500;$('#raceTimer').textContent='25:00';}
+
+/* Mini-games simulation */
+function startMiniGame(){
+  const a=$('#miniGameArea');
+  a.classList.remove('hidden');
+  a.innerHTML='<h3>🎮 Break Mini-Game: Connect 4 (demo)</h3><p>Relax! Game auto-closes in 5 min.</p>';
+  miniGameActive=true;
+}
+function endMiniGame(){
+  const a=$('#miniGameArea');
+  a.classList.add('hidden');
+  a.innerHTML='';
+  miniGameActive=false;
+}
+
+/* ------------------------------------------------------------
+  
