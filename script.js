@@ -1,353 +1,512 @@
-/* ===================================================
-   Penguin Companion — XP Planner  (Final MVP Build)
-   =================================================== */
+/* ==========================================================
+   Penguin Companion — XP Planner (MVP Showcase)
+   Part 3: script.js
+   ========================================================== */
 
-/* ========== GLOBAL STATE ========== */
-let exp = parseFloat(localStorage.getItem("xp")) || 0;
-let coins = parseFloat(localStorage.getItem("coins")) || 0;
-let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
-let rewards = JSON.parse(localStorage.getItem("rewards")) || [];
-let categories = JSON.parse(localStorage.getItem("categories")) || ["Study","Self-Care"];
-let history = JSON.parse(localStorage.getItem("history")) || {};
-let categoryCounts = JSON.parse(localStorage.getItem("categoryCounts")) || {};
-let today = new Date().toISOString().slice(0,10);
-if(!history[today]) history[today] = [];
-
-let focusMin = parseInt(localStorage.getItem("focusMin")) || 25;
-let shortMin = parseInt(localStorage.getItem("shortMin")) || 5;
-let longMin  = parseInt(localStorage.getItem("longMin"))  || 15;
-let lang = localStorage.getItem("lang") || "en";
-
-let avatar = JSON.parse(localStorage.getItem("avatar")) || {
-  name:"Pingu", color:"#3b82f6", head:"", body:"", effect:""
+/* -------------------------
+   Persistent App State
+-------------------------- */
+const LS = {
+  xp:      "pc_xp",
+  coins:   "pc_coins",
+  tasks:   "pc_tasks",
+  cats:    "pc_categories",
+  avatar:  "pc_avatar",
+  owned:   "pc_owned",
+  shop:    "pc_shop_init"
 };
-let owned = JSON.parse(localStorage.getItem("owned")) || [];
 
-/* ========== ELEMENTS ========== */
-const xpBar = document.getElementById("xpBar");
-const xpTotal = document.getElementById("xpTotal");
-const levelEl = document.getElementById("level");
-const coinsTotal = document.getElementById("coinsTotal");
-const penguinPreview = document.getElementById("penguinPreview");
-const toast = document.getElementById("toast");
-const toastTitle = document.getElementById("toastTitle");
-const toastMsg = document.getElementById("toastMsg");
-const toastPenguin = document.getElementById("toastPenguin");
-const bell = document.getElementById("bell");
-const ambient = document.getElementById("ambient");
+let xp     = parseFloat(localStorage.getItem(LS.xp)   || "0");
+let coins  = parseFloat(localStorage.getItem(LS.coins)|| "0");
+let tasks  = JSON.parse(localStorage.getItem(LS.tasks)|| "[]");
+let cats   = JSON.parse(localStorage.getItem(LS.cats) || '["Study","Self-Care","Work"]');
 
-/* ========== INITIALIZE ========== */
-window.addEventListener("load", () => {
-  renderProgress(); renderTasks(); renderRewards(); renderStats(); renderAvatar();
-  renderShop(); renderTimeline(); renderAlarms();
-  updateCoins();
-});
+let avatar = JSON.parse(localStorage.getItem(LS.avatar) || JSON.stringify({
+  name: "Pingu",
+  color: "#3b82f6",
+  head:  "",       // beanie, crown, gradcap, bunny, santa, headphones, glasses, bow
+  body:  "",       // scarf, hoodie, backpack, cape
+  effect:""        // aura, rainbow, frost, shadow
+}));
 
-/* ========== UTILITIES ========== */
-function level(){ return Math.floor(exp / 100) + 1; }
-function renderProgress(){
-  const p = exp % 100;
-  xpBar.style.width = `${p}%`;
-  xpTotal.textContent = exp.toFixed(2);
-  levelEl.textContent = level();
-}
-function updateCoins(){ coinsTotal.textContent = coins; }
+let owned  = JSON.parse(localStorage.getItem(LS.owned) || "[]");
 
-/* XP / Coins Award */
-function addXP(amount){ exp += amount; if(exp<0) exp=0; renderProgress(); saveAll(); }
-function addCoins(amount){ coins += amount; if(coins<0) coins=0; updateCoins(); saveAll(); }
+/* -------------------------
+   Elements
+-------------------------- */
+const el = (id) => document.getElementById(id);
 
+// Header
+const xpBar        = el("xpBar");
+const xpTotal      = el("xpTotal");
+const levelEl      = el("level");
+const coinsTotal   = el("coinsTotal");
+
+// Tasks
+const taskName     = el("taskName");
+const taskCategory = el("taskCategory");
+const taskXP       = el("taskXP");
+const addTaskBtn   = el("addTask");
+const taskList     = el("taskList");
+
+// Calls / Meet
+const callPenguinBtn = el("callPenguin");
+const callModeBtns   = document.querySelectorAll(".callMode");
+const meetBtn        = el("meetBtn");
+
+// Avatar
+const penguinPreview = el("penguinPreview");
+const avatarNameText = el("avatarName");
+const avatarInput    = el("avatarInput");
+const headSelect     = el("headSelect");
+const bodySelect     = el("bodySelect");
+const effectSelect   = el("effectSelect");
+const colorChips     = document.querySelectorAll("#colorChips .chip");
+const saveAvatarBtn  = el("saveAvatar");
+
+// Shop
+const coinsShop   = el("coinsShop");
+const shopGrid    = el("shopGrid");
+const shopPenguin = el("shopPenguin");
+
+// Overlay (Calls)
+const callOverlay = el("callOverlay");
+const callBg      = el("callBg");
+const callPenguin = el("callPenguin");
+const callAction  = el("callAction");
+const closeCall   = el("closeCall");
+
+// Toast
+const toast       = el("toast");
+const toastTitle  = el("toastTitle");
+const toastMsg    = el("toastMsg");
+const toastPenguin= el("toastPenguin");
+
+// Sounds
+const bell        = el("bell");
+
+/* -------------------------
+   Utilities
+-------------------------- */
 function saveAll(){
-  localStorage.setItem("xp",exp);
-  localStorage.setItem("coins",coins);
-  localStorage.setItem("tasks",JSON.stringify(tasks));
-  localStorage.setItem("rewards",JSON.stringify(rewards));
-  localStorage.setItem("categories",JSON.stringify(categories));
-  localStorage.setItem("categoryCounts",JSON.stringify(categoryCounts));
-  localStorage.setItem("history",JSON.stringify(history));
-  localStorage.setItem("avatar",JSON.stringify(avatar));
-  localStorage.setItem("owned",JSON.stringify(owned));
+  localStorage.setItem(LS.xp, xp.toString());
+  localStorage.setItem(LS.coins, coins.toString());
+  localStorage.setItem(LS.tasks, JSON.stringify(tasks));
+  localStorage.setItem(LS.cats, JSON.stringify(cats));
+  localStorage.setItem(LS.avatar, JSON.stringify(avatar));
+  localStorage.setItem(LS.owned, JSON.stringify(owned));
 }
 
-/* ========== TOAST ========== */
-function showToast(title,msg){
-  toastTitle.textContent = title; toastMsg.textContent = msg;
+function level(){ return Math.floor(xp/100) + 1; }
+
+function renderHeader(){
+  xpTotal.textContent    = xp.toFixed(2);
+  coinsTotal.textContent = Math.floor(coins);
+  levelEl.textContent    = level();
+  xpBar.style.width      = `${xp % 100}%`;
+}
+
+function showToast(title, msg){
+  toastTitle.textContent = title;
+  toastMsg.textContent   = msg;
+  applyPenguin(toastPenguin, avatar); // keep avatar consistent
   toast.classList.remove("hidden");
-  applyPenguin(toastPenguin,avatar.color,avatar.head,avatar.body,avatar.effect);
-  clearTimeout(toast.timer);
-  toast.timer = setTimeout(()=>toast.classList.add("hidden"),3000);
+  clearTimeout(toast._t);
+  toast._t = setTimeout(()=>toast.classList.add("hidden"), 3000);
 }
 
-/* ========== TASKS (simplified) ========== */
-function renderTasks(){
-  const list = document.getElementById("taskList");
-  list.innerHTML = "";
-  tasks.forEach((t,i)=>{
-    const li = document.createElement("li");
-    li.innerHTML = `<div>${t.name}</div><div>${t.xp} XP</div>`;
-    li.onclick=()=>startPomodoro(t,i);
-    list.appendChild(li);
-  });
-}
-
-/* ========== REWARDS ========== */
-function renderRewards(){
-  const list = document.getElementById("rewardList");
-  list.innerHTML="";
-  rewards.forEach((r,i)=>{
-    const li=document.createElement("li");
-    li.innerHTML=`<div>${r.name}</div><div>${r.cost} XP</div>`;
-    li.onclick=()=>redeemReward(i);
-    list.appendChild(li);
-  });
-}
-function redeemReward(i){
-  const r = rewards[i];
-  if(exp < r.cost) return showToast(avatar.name,"Not enough XP!");
-  addXP(-r.cost); showToast(avatar.name,`Bought ${r.name}!`);
-}
-
-/* ========== HISTORY / STATS ========== */
-function renderStats(){
-  const chart=document.getElementById("statsChart"); chart.innerHTML="";
-  const tot=Object.values(categoryCounts).reduce((a,b)=>a+b,0);
-  if(tot===0){chart.innerHTML="<p class='muted small'>No data yet.</p>";return;}
-  Object.entries(categoryCounts).forEach(([cat,c],i)=>{
-    const bar=document.createElement("div");
-    bar.className="stat-bar";
-    bar.style.width=`${(c/tot)*100}%`;
-    bar.style.background=`hsl(${i*60} 80% 55%)`;
-    bar.style.margin="4px 0"; bar.textContent=`${cat}: ${c}`;
-    chart.appendChild(bar);
-  });
-}
-
-/* ========== AVATAR BUILDER ========== */
-function renderAvatar(){
-  document.getElementById("avatarName").textContent=avatar.name;
-  document.getElementById("avatarInput").value=avatar.name;
-  applyPenguin(penguinPreview,avatar.color,avatar.head,avatar.body,avatar.effect);
-}
-function applyPenguin(el,color,head,body,effect){
-  el.style.setProperty("--p",color);
-  el.querySelectorAll(".acc").forEach(a=>a.remove());
-  if(head){ const h=document.createElement("div"); h.className=`acc ${head}`; el.appendChild(h);}
-  if(body){ const b=document.createElement("div"); b.className=`acc ${body}`; el.appendChild(b);}
-  if(effect){ el.classList.add(effect);} else el.classList.remove("effect");
-}
-document.getElementById("saveAvatar").onclick=()=>{
-  avatar.name=document.getElementById("avatarInput").value||avatar.name;
-  avatar.color=document.querySelector(".chip.active")?.dataset.color||avatar.color;
-  avatar.head=document.getElementById("headSelect").value;
-  avatar.body=document.getElementById("bodySelect").value;
-  avatar.effect=document.getElementById("effectSelect").value;
-  renderAvatar(); saveAll(); showToast(avatar.name,"Updated!");
-};
-document.querySelectorAll(".chip").forEach(ch=>{
-  ch.onclick=()=>{
-    document.querySelectorAll(".chip").forEach(c=>c.classList.remove("active"));
-    ch.classList.add("active");
-    applyPenguin(penguinPreview,ch.dataset.color,avatar.head,avatar.body,avatar.effect);
-  };
-});
-
-/* ========== SHOP ========== */
-const baseShop = {
-  accessories:["scarf","glasses","headphones","bow","beanie","crown","gradcap","bunny","santa","hoodie"],
-  themes:["tech","arctic","sunset","midnight"],
-  effects:["aura","rainbow","frost","shadow"]
-};
-function renderShop(){
-  fillShop("shopAccessories",baseShop.accessories);
-  fillShop("shopThemes",baseShop.themes);
-  fillShop("shopEffects",baseShop.effects);
-}
-function fillShop(id,arr){
-  const area=document.getElementById(id); area.innerHTML="";
-  arr.forEach(item=>{
-    const div=document.createElement("div"); div.className="shop-item";
-    if(owned.includes(item)) div.classList.add("owned");
-    div.textContent="★";
-    div.title=item;
-    div.onclick=()=>buyItem(item);
-    area.appendChild(div);
-  });
-}
-function buyItem(item){
-  const price=10;
-  if(owned.includes(item)) return showToast(avatar.name,"Already owned!");
-  if(coins<price) return showToast(avatar.name,"Not enough coins!");
-  addCoins(-price); owned.push(item); saveAll(); renderShop();
-  showToast(avatar.name,`Bought ${item}!`);
-}
-
-/* ========== POMODORO (shortened functional) ========== */
-let pomoTimer=null,secondsLeft=0,isBreak=false,isPaused=false,currentTask=null;
-function startPomodoro(t){
-  currentTask=t; secondsLeft=focusMin*60; isBreak=false; isPaused=false;
-  document.getElementById("pomoOverlay").classList.remove("hidden");
-  document.getElementById("timer").textContent=formatTime(secondsLeft);
-  applyPenguin(document.getElementById("pomoPenguin"),avatar.color,avatar.head,avatar.body,avatar.effect);
-  clearInterval(pomoTimer); pomoTimer=setInterval(runPomodoro,1000);
-}
-function runPomodoro(){
-  if(isPaused) return;
-  secondsLeft--; updateTimer();
-  if(secondsLeft<=0){
-    clearInterval(pomoTimer); bell.play();
-    if(!isBreak){ addXP(currentTask.xp); addCoins(Math.floor(currentTask.xp/5));
-      history[today].push({name:currentTask.name,xp:currentTask.xp}); saveAll();
-      showToast(avatar.name,`+${currentTask.xp} XP + ${Math.floor(currentTask.xp/5)} Coins!`);
-      startBreak();
-    }else endPomodoro();
+function ensurePenguinParts(container){
+  // Build penguin parts if container is empty
+  if(!container.querySelector(".body")){
+    container.innerHTML = `
+      <div class="body"></div>
+      <div class="wing left"></div><div class="wing right"></div>
+      <div class="eye left"></div><div class="eye right"></div>
+      <div class="beak"></div>
+    `;
   }
 }
-function updateTimer(){ document.getElementById("timer").textContent=formatTime(secondsLeft); }
-function formatTime(sec){const m=Math.floor(sec/60),s=sec%60;return `${m.toString().padStart(2,"0")}:${s.toString().padStart(2,"0")}`;}
-function startBreak(){isBreak=true;secondsLeft=shortMin*60;startMiniGame();pomoTimer=setInterval(runPomodoro,1000);}
-function endPomodoro(){document.getElementById("pomoOverlay").classList.add("hidden");renderProgress();}
 
-/* ========== MINIGAMES (breaks) ========== */
-function startMiniGame(){
-  const gm=document.getElementById("gameModal");
-  gm.classList.remove("hidden");
-  const area=document.getElementById("gameArea");
-  area.innerHTML="<p>🎲 Quick memory: click when you see 🐧</p>";
-  let shown=false;
-  const btn=document.createElement("button");btn.className="btn";btn.textContent="Start";
-  area.appendChild(btn);
-  btn.onclick=()=>{btn.remove();setTimeout(()=>{
-    area.textContent="🐧";shown=true;},Math.random()*3000);
+/* -------------------------
+   Avatar Rendering
+-------------------------- */
+function applyPenguin(container, av){
+  ensurePenguinParts(container);
+  container.style.setProperty("--p", av.color || "#3b82f6");
+
+  // Remove previous accessories/effects
+  container.querySelectorAll(".acc").forEach(n=>n.remove());
+  container.classList.remove("aura","rainbow","frost","shadow");
+
+  // Head
+  if(av.head){
+    const h = document.createElement("div");
+    h.className = `acc ${av.head}`;
+    container.appendChild(h);
+  }
+  // Body
+  if(av.body){
+    const b = document.createElement("div");
+    b.className = `acc ${av.body}`;
+    container.appendChild(b);
+  }
+  // Effect (class on container)
+  if(av.effect){
+    container.classList.add(av.effect);
+  }
+}
+
+function renderAvatarEditor(){
+  avatarNameText.textContent = avatar.name;
+  avatarInput.value          = avatar.name;
+  // Populate selects once
+  if(!headSelect.options.length){
+    ["","beanie","crown","gradcap","bunny","santa","headphones","glasses","bow"]
+      .forEach(v=>{
+        const o=document.createElement("option");
+        o.value=v; o.textContent=v || "none";
+        headSelect.appendChild(o);
+      });
+  }
+  if(!bodySelect.options.length){
+    ["","scarf","hoodie","backpack","cape"]
+      .forEach(v=>{
+        const o=document.createElement("option");
+        o.value=v; o.textContent=v || "none";
+        bodySelect.appendChild(o);
+      });
+  }
+  if(!effectSelect.options.length){
+    ["","aura","rainbow","frost","shadow"]
+      .forEach(v=>{
+        const o=document.createElement("option");
+        o.value=v; o.textContent=v || "none";
+        effectSelect.appendChild(o);
+      });
+  }
+  headSelect.value   = avatar.head || "";
+  bodySelect.value   = avatar.body || "";
+  effectSelect.value = avatar.effect || "";
+
+  // chips active state
+  colorChips.forEach(ch=>{
+    ch.classList.toggle("active", ch.dataset.color === avatar.color);
+  });
+
+  applyPenguin(penguinPreview, avatar);
+}
+
+colorChips.forEach(ch=>{
+  ch.addEventListener("click", ()=>{
+    colorChips.forEach(c=>c.classList.remove("active"));
+    ch.classList.add("active");
+    avatar.color = ch.dataset.color;
+    applyPenguin(penguinPreview, avatar);
+  });
+});
+
+saveAvatarBtn.addEventListener("click", ()=>{
+  avatar.name   = (avatarInput.value || avatar.name).trim();
+  avatar.head   = headSelect.value;
+  avatar.body   = bodySelect.value;
+  avatar.effect = effectSelect.value;
+  saveAll();
+  renderAvatarEditor();
+  applyPenguin(shopPenguin, avatar); // shop preview also follows user avatar
+  showToast(avatar.name, "Avatar updated!");
+});
+
+/* -------------------------
+   Tasks
+-------------------------- */
+function renderCategories(){
+  taskCategory.innerHTML = "";
+  cats.forEach(c=>{
+    const o=document.createElement("option");
+    o.value=c; o.textContent=c;
+    taskCategory.appendChild(o);
+  });
+}
+
+function renderTasks(){
+  taskList.innerHTML = "";
+  tasks.forEach((t, i)=>{
+    const li = document.createElement("li");
+    const left = document.createElement("div");
+    left.innerHTML = `<b>${t.name}</b><br><span class="muted small">${t.category} • ${t.xp} XP</span>`;
+
+    const right = document.createElement("div");
+    const btnFocus = document.createElement("button");
+    btnFocus.className = "btn ghost";
+    btnFocus.textContent = "Focus";
+    btnFocus.onclick = ()=> openCall("Study"); // opens Study-themed call
+
+    const btnDone = document.createElement("button");
+    btnDone.className = "btn";
+    btnDone.textContent = "Complete";
+    btnDone.onclick = ()=>{
+      xp += parseFloat(t.xp);
+      coins += Math.max(1, Math.floor(parseFloat(t.xp)/5)); // simple coin reward
+      tasks.splice(i,1);
+      saveAll();
+      renderHeader();
+      renderTasks();
+      showToast(avatar.name, `+${t.xp} XP • +${Math.max(1, Math.floor(t.xp/5))} coins`);
+      bell.play().catch(()=>{});
+    };
+
+    const btnDel = document.createElement("button");
+    btnDel.className = "btn ghost";
+    btnDel.textContent = "🗑";
+    btnDel.onclick = ()=>{
+      tasks.splice(i,1);
+      saveAll();
+      renderTasks();
+    };
+
+    right.append(btnFocus, btnDone, btnDel);
+    li.append(left, right);
+    taskList.appendChild(li);
+  });
+}
+
+addTaskBtn.addEventListener("click", ()=>{
+  const name = taskName.value.trim();
+  const xpV  = parseFloat(taskXP.value);
+  const cat  = taskCategory.value || "General";
+  if(!name || isNaN(xpV)) return alert("Add a task name and XP");
+  tasks.push({name, xp:xpV, category:cat});
+  taskName.value = ""; taskXP.value = "";
+  saveAll(); renderTasks();
+});
+
+/* -------------------------
+   Calls (Context-Themed)
+-------------------------- */
+const ACTION_ICONS = {
+  Study:    "✍️",
+  Exercise: "🏋️",
+  Eat:      "🍲",
+  Bath:     "🫧",
+  Sleep:    "💤"
+};
+
+const BG_CLASS = {
+  Study:    "study",
+  Exercise: "exercise",
+  Eat:      "eat",
+  Bath:     "bath",
+  Sleep:    "sleep",
+  Chill:    "study" // default fallback
+};
+
+function openCall(mode="Chill"){
+  // Keep current avatar — do NOT change visuals; just apply saved avatar state
+  callOverlay.classList.remove("hidden");
+
+  // Background scene by mode
+  callBg.className = "call-bg " + BG_CLASS[mode];
+
+  // Action icon anim
+  callAction.textContent = ACTION_ICONS[mode] || "";
+
+  // Apply avatar to penguin in call
+  ensurePenguinParts(callPenguin);
+  applyPenguin(callPenguin, avatar);
+
+  // Subtle motion per mode
+  animatePenguinByMode(callPenguin, mode);
+}
+
+function animatePenguinByMode(container, mode){
+  // We will gently animate wing transforms with JS (complementing CSS)
+  const left  = container.querySelector(".wing.left");
+  const right = container.querySelector(".wing.right");
+  const body  = container.querySelector(".body");
+
+  clearInterval(container._ani);
+  let t=0;
+  container._ani = setInterval(()=>{
+    t++;
+    switch(mode){
+      case "Study":
+        left.style.transform  = `rotate(${-8 + Math.sin(t/6)*4}deg)`;
+        right.style.transform = `rotate(${8 - Math.sin(t/6)*4}deg)`;
+        body.style.transform  = `translateY(${Math.sin(t/12)*1.5}px)`;
+        break;
+      case "Exercise":
+        left.style.transform  = `rotate(${-20 + Math.sin(t/4)*18}deg)`;
+        right.style.transform = `rotate(${20 - Math.sin(t/4)*18}deg)`;
+        body.style.transform  = `translateY(${Math.abs(Math.sin(t/6))*6}px)`;
+        break;
+      case "Eat":
+        left.style.transform  = `rotate(-6deg)`;
+        right.style.transform = `rotate(6deg)`;
+        body.style.transform  = `translateY(${Math.abs(Math.sin(t/8))*3}px)`;
+        break;
+      case "Bath":
+        left.style.transform  = `rotate(${-14 + Math.sin(t/5)*10}deg)`;
+        right.style.transform = `rotate(${14 - Math.sin(t/5)*10}deg)`;
+        body.style.transform  = `translateY(${Math.sin(t/6)*2.5}px)`;
+        break;
+      case "Sleep":
+        left.style.transform  = `rotate(-6deg)`;
+        right.style.transform = `rotate(6deg)`;
+        body.style.transform  = `translateY(${Math.sin(t/16)*1.4}px)`;
+        break;
+      default:
+        left.style.transform  = `rotate(${-6 + Math.sin(t/10)*6}deg)`;
+        right.style.transform = `rotate(${6 - Math.sin(t/10)*6}deg)`;
+        body.style.transform  = `translateY(${Math.sin(t/10)*2}px)`;
+    }
+  }, 50);
+}
+
+closeCall.addEventListener("click", ()=>{
+  callOverlay.classList.add("hidden");
+  if(callPenguin._ani) clearInterval(callPenguin._ani);
+});
+
+// Buttons
+callPenguinBtn.addEventListener("click", ()=>openCall("Chill"));
+callModeBtns.forEach(b=>b.addEventListener("click", ()=>openCall(b.dataset.mode)));
+meetBtn.addEventListener("click", ()=>window.open("https://meet.new","_blank"));
+
+/* -------------------------
+   Shop (Preloaded Items)
+-------------------------- */
+const SHOP_ITEMS = [
+  // accessories (head/body)
+  { id:"headphones", type:"head",  name:"Headphones", price:10, icon:"🎧" },
+  { id:"beanie",     type:"head",  name:"Beanie",     price:6,  icon:"🧢" },
+  { id:"glasses",    type:"head",  name:"Glasses",    price:8,  icon:"👓" },
+  { id:"crown",      type:"head",  name:"Crown",      price:14, icon:"👑" },
+  { id:"bunny",      type:"head",  name:"Bunny Ears", price:9,  icon:"🐰" },
+  { id:"scarf",      type:"body",  name:"Scarf",      price:7,  icon:"🧣" },
+  { id:"gradcap",    type:"head",  name:"Grad Cap",   price:10, icon:"🎓" },
+  { id:"hoodie",     type:"body",  name:"Hoodie",     price:12, icon:"🧥" },
+  { id:"backpack",   type:"body",  name:"Backpack",   price:11, icon:"🎒" },
+  { id:"santa",      type:"head",  name:"Santa Hat",  price:9,  icon:"🎅" },
+
+  // themes (we treat as effects on background preferences; for now we just sell them)
+  { id:"theme-tech",    type:"theme", name:"Tech Lab",     price: 0, icon:"🧪" },
+  { id:"theme-arctic",  type:"theme", name:"Arctic Base",  price:18, icon:"❄️" },
+  { id:"theme-sunset",  type:"theme", name:"Sunset Beach", price:20, icon:"🌅" },
+  { id:"theme-nebula",  type:"theme", name:"Night Nebula", price:22, icon:"🌌" },
+
+  // effects
+  { id:"aura",     type:"effect", name:"Aura",        price:12, icon:"✨" },
+  { id:"rainbow",  type:"effect", name:"Rainbow",     price:18, icon:"🌈" },
+  { id:"frost",    type:"effect", name:"Frost Aura",  price:20, icon:"🧊" },
+  { id:"shadow",   type:"effect", name:"Shadow Trail",price:16, icon:"🌙" }
+];
+
+function renderShop(){
+  shopGrid.innerHTML = "";
+  coinsShop.textContent = Math.floor(coins);
+  applyPenguin(shopPenguin, avatar);
+
+  SHOP_ITEMS.forEach(item=>{
+    const tile = document.createElement("div");
+    tile.className = "shop-item" + (owned.includes(item.id) ? " owned" : "");
+    tile.innerHTML = `
+      <div class="icon" style="font-size:20px">${item.icon}</div>
+      <div class="name small">${item.name}</div>
+      <div class="price">${item.price} coins</div>
+    `;
+    tile.title = owned.includes(item.id) ? `Owned — click to equip` : `Buy for ${item.price} coins`;
+    tile.addEventListener("click", ()=> handleShopClick(item));
+    shopGrid.appendChild(tile);
+  });
+}
+
+function handleShopClick(item){
+  // Already owned: equip directly
+  if(owned.includes(item.id)){
+    equipItem(item);
+    showToast(avatar.name, `${item.name} equipped!`);
+    return;
+  }
+  // Not owned: buy if enough coins
+  if(coins < item.price){
+    showToast(avatar.name, `Not enough coins for ${item.name}`);
+    return;
+  }
+  coins -= item.price; owned.push(item.id);
+  saveAll(); renderHeader(); renderShop();
+  equipItem(item);
+  showToast(avatar.name, `Bought & equipped ${item.name}!`);
+}
+
+function equipItem(item){
+  if(item.type === "head")  avatar.head   = item.id;
+  if(item.type === "body")  avatar.body   = item.id;
+  if(item.type === "effect")avatar.effect = item.id;
+  // themes would be stored to apply to app background later (MVP keeps call themes per mode)
+  saveAll();
+  renderAvatarEditor();
+  applyPenguin(shopPenguin, avatar);
+}
+
+/* -------------------------
+   Export / Import
+-------------------------- */
+el("exportJSON").addEventListener("click", ()=>{
+  const data = { xp, coins, tasks, cats, avatar, owned };
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:"application/json"}));
+  a.download = "penguin-data.json";
+  a.click();
+});
+
+el("exportCSV").addEventListener("click", ()=>{
+  let csv = "Type,Name,Value\n";
+  tasks.forEach(t => csv += `Task,${safe(t.name)},${t.xp}\n`);
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
+  a.download = "penguin-data.csv";
+  a.click();
+});
+
+el("importFile").addEventListener("change", (e)=>{
+  const file = e.target.files?.[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    try{
+      const data = JSON.parse(reader.result);
+      if(typeof data.xp === "number") xp = data.xp;
+      if(typeof data.coins === "number") coins = data.coins;
+      if(Array.isArray(data.tasks)) tasks = data.tasks;
+      if(Array.isArray(data.cats))  cats  = data.cats;
+      if(typeof data.avatar === "object") avatar = data.avatar;
+      if(Array.isArray(data.owned)) owned = data.owned;
+      saveAll();
+      init(); // full re-render
+      showToast(avatar.name, "Data imported!");
+    }catch(err){
+      alert("Invalid JSON file");
+    }
   };
-  area.onclick=()=>{if(shown){area.textContent="✅ Great reflex!";setTimeout(()=>gm.classList.add("hidden"),1000);}};
-}
+  reader.readAsText(file);
+});
 
-/* ========== RACE (multiplayer across tabs) ========== */
-const channel=new BroadcastChannel("penguinRace");
-let raceCode=null,isHost=false;
-document.getElementById("raceBtn").onclick=()=>openRaceLobby();
-function openRaceLobby(){document.getElementById("raceLobby").classList.remove("hidden");}
-document.getElementById("closeRaceLobby").onclick=()=>document.getElementById("raceLobby").classList.add("hidden");
-document.getElementById("createRace").onclick=()=>{
-  raceCode=Math.random().toString().slice(2,8);isHost=true;
-  document.getElementById("createdCode").textContent=raceCode;
-  document.getElementById("createdCodeWrap").style.display="block";
-  navigator.clipboard.writeText(raceCode);
-  openRaceRoom();
-};
-document.getElementById("joinRace").onclick=()=>{
-  raceCode=document.getElementById("joinCode").value.trim();isHost=false;
-  openRaceRoom();channel.postMessage({type:"join",name:avatar.name});
-};
-function openRaceRoom(){
-  document.getElementById("raceLobby").classList.add("hidden");
-  document.getElementById("raceRoom").classList.remove("hidden");
-  document.getElementById("raceCodeLabel").textContent=raceCode;
-  updateRaceList();
-}
-function updateRaceList(){
-  const ul=document.getElementById("raceUsers");
-  ul.innerHTML=`<li>${avatar.name}</li>`;
-}
-document.getElementById("raceClose").onclick=()=>document.getElementById("raceRoom").classList.add("hidden");
-channel.onmessage=(e)=>{
-  if(e.data.type==="join") addRaceUser(e.data.name);
-  if(e.data.type==="updateXP") updateLeaderboard(e.data.name,e.data.xp);
-};
-function addRaceUser(name){
-  const ul=document.getElementById("raceUsers");
-  const li=document.createElement("li");li.textContent=name;ul.appendChild(li);
-}
-function updateLeaderboard(name,xp){
-  const ul=document.getElementById("raceBoard");
-  const li=document.createElement("li");li.textContent=`${name}: ${xp} XP`;
-  ul.appendChild(li);
-}
+function safe(s){ return String(s).replace(/,/g," "); }
 
-/* ========== IMPORT / EXPORT ========== */
-document.getElementById("exportJSON").onclick=()=>{
-  const data={exp,coins,tasks,rewards,categories,history,avatar,owned};
-  download("penguinData.json",JSON.stringify(data,null,2));
-};
-document.getElementById("exportCSV").onclick=()=>{
-  let csv="Type,Name,Value\n";
-  tasks.forEach(t=>csv+=`Task,${t.name},${t.xp}\n`);
-  rewards.forEach(r=>csv+=`Reward,${r.name},${r.cost}\n`);
-  download("penguinData.csv",csv);
-};
-document.getElementById("importFile").onchange=e=>{
-  const file=e.target.files[0];if(!file)return;
-  const r=new FileReader();r.onload=()=>{
-    const data=JSON.parse(r.result);
-    Object.assign(window,data); saveAll(); location.reload();
-  };r.readAsText(file);
-};
-function download(name,content){
-  const a=document.createElement("a");
-  a.href=URL.createObjectURL(new Blob([content],{type:"text/plain"}));
-  a.download=name;a.click();
-}
+/* -------------------------
+   Race (placeholder button)
+-------------------------- */
+el("raceBtn").addEventListener("click", ()=>{
+  showToast(avatar.name, "Race lobby opens in the next build (Kahoot-style) ✅");
+});
 
-/* ========== SETTINGS ========== */
-document.getElementById("openSettings").onclick=()=>document.getElementById("settingsModal").classList.remove("hidden");
-document.getElementById("closeSettings").onclick=()=>document.getElementById("settingsModal").classList.add("hidden");
-document.getElementById("langSelect").value=lang;
-document.getElementById("langSelect").onchange=e=>{
-  lang=e.target.value;localStorage.setItem("lang",lang);
-  showToast(avatar.name,`Language set to ${lang}`);
-};
-
-/* ========== CALLS / MEET ========== */
-document.getElementById("callPenguin").onclick=()=>openCall("Chill");
-document.querySelectorAll(".callMode").forEach(b=>b.onclick=()=>openCall(b.dataset.mode));
-document.getElementById("meetBtn").onclick=()=>window.open("https://meet.new","_blank");
-function openCall(mode){
-  const win=document.getElementById("callWindow");
-  win.classList.remove("hidden");
-  applyPenguin(document.getElementById("miniPenguin"),avatar.color,avatar.head,avatar.body,avatar.effect);
-  document.getElementById("miniCaption").textContent=mode+" mode";
+/* -------------------------
+   Init
+-------------------------- */
+function init(){
+  renderHeader();
+  renderCategories();
+  renderTasks();
+  renderAvatarEditor();
+  renderShop();
 }
-document.getElementById("closeCall").onclick=()=>document.getElementById("callWindow").classList.add("hidden");
-document.getElementById("restoreCall").onclick=()=>document.getElementById("pomoOverlay").classList.remove("hidden");
-
-/* ========== ALARMS ========== */
-let alarms=JSON.parse(localStorage.getItem("alarms"))||[];
-function renderAlarms(){
-  const ul=document.getElementById("alarmList");ul.innerHTML="";
-  alarms.forEach((a,i)=>{
-    const li=document.createElement("li");
-    li.textContent=`${a.time} – ${a.label}`;ul.appendChild(li);
-  });
-}
-document.getElementById("addAlarm").onclick=()=>{
-  const time=document.getElementById("alarmTime").value;
-  const label=document.getElementById("alarmLabel").value||"Alarm";
-  const sound=document.getElementById("alarmSound").value;
-  if(!time) return;
-  alarms.push({time,label,sound});localStorage.setItem("alarms",JSON.stringify(alarms));renderAlarms();
-  showToast(avatar.name,`Alarm set for ${time}`);
-};
-
-/* ========== TIMELINE (hour blocks) ========== */
-let blocks=JSON.parse(localStorage.getItem("blocks"))||[];
-function renderTimeline(){
-  const tl=document.getElementById("timeline");tl.querySelectorAll(".block").forEach(b=>b.remove());
-  blocks.forEach((b,i)=>{
-    const div=document.createElement("div");div.className="block";div.textContent=`${b.title} (${b.from}-${b.to})`;
-    div.onclick=()=>{if(confirm("Delete block?")){blocks.splice(i,1);saveBlocks();}};
-    tl.appendChild(div);
-  });
-}
-function saveBlocks(){localStorage.setItem("blocks",JSON.stringify(blocks));renderTimeline();}
-document.getElementById("addBlock").onclick=()=>{
-  const title=document.getElementById("blockTitle").value;
-  const from=document.getElementById("blockFrom").value;
-  const to=document.getElementById("blockTo").value;
-  if(!from||!to) return;
-  blocks.push({title,from,to});saveBlocks();
-};
-setInterval(()=>{ // penguin marker move
-  const now=document.getElementById("timelineNow");
-  const date=new Date();const h=date.getHours()+date.getMinutes()/60;
-  now.style.top=`${(h/24)*200}px`;
-},60000);
+init();
