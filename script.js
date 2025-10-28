@@ -1,320 +1,388 @@
 /* ==========================================================
-   Penguin Companion — XP Planner
-   Part 3: script.js  (final MVP with Race / Pomodoro Sync)
+   Penguin Companion — script.js
+   Version: Mobile + Desktop Compatible MVP
    ========================================================== */
 
-/* ---------- Utility shortcuts ---------- */
-const $ = id => document.getElementById(id);
-const $$ = sel => document.querySelectorAll(sel);
+// ========== Data and State ==========
+let state = {
+  xp: 0,
+  coins: 0,
+  level: 1,
+  tasks: [],
+  avatar: { name: "Pingu", color: "#1DA1F2", head: "", body: "", effect: "" },
+  shop: [],
+  challenges: [],
+  focusMins: 25,
+  breakMins: 5,
+  pomodoroActive: false,
+  currentTask: null,
+  today: new Date().toDateString()
+};
 
-/* ---------- Data ---------- */
-let xp=parseFloat(localStorage.xp||0);
-let coins=parseFloat(localStorage.coins||0);
-let avatar=JSON.parse(localStorage.avatar||'{"name":"Pingu","color":"#3b82f6"}');
-let tasks=JSON.parse(localStorage.tasks||"[]");
-let owned=JSON.parse(localStorage.owned||"[]");
-let cats=JSON.parse(localStorage.cats||'["Study","Self-Care","Work"]');
+// Confetti celebration
+function confettiBurst() {
+  const canvas = document.createElement('canvas');
+  canvas.className = 'confetti';
+  canvas.style.position = 'fixed';
+  canvas.style.top = 0;
+  canvas.style.left = 0;
+  canvas.width = innerWidth;
+  canvas.height = innerHeight;
+  canvas.style.pointerEvents = 'none';
+  document.body.appendChild(canvas);
 
-/* ---------- XP + Coins ---------- */
-function saveAll(){
-  localStorage.xp=xp; localStorage.coins=coins;
-  localStorage.avatar=JSON.stringify(avatar);
-  localStorage.tasks=JSON.stringify(tasks);
-  localStorage.owned=JSON.stringify(owned);
-}
-function updateHeader(){
-  $("xpBar").style.width=`${xp%100}%`;
-  $("xpTotal").textContent=xp.toFixed(1);
-  $("level").textContent=Math.floor(xp/100)+1;
-  $("coinsTotal").textContent=Math.floor(coins);
-}
+  const ctx = canvas.getContext('2d');
+  const particles = Array.from({ length: 120 }, () => ({
+    x: Math.random() * canvas.width,
+    y: Math.random() * canvas.height - canvas.height,
+    r: Math.random() * 6 + 2,
+    c: `hsl(${Math.random() * 360},100%,60%)`,
+    d: Math.random() * 5 + 2
+  }));
 
-/* ==========================================================
-   AVATAR + SHOP
-========================================================== */
-function ensurePenguinParts(el){
-  if(!el.querySelector(".body")){
-    el.innerHTML=`<div class="body"></div>
-      <div class="wing left"></div><div class="wing right"></div>
-      <div class="eye left"></div><div class="eye right"></div><div class="beak"></div>`;
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for (let p of particles) {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = p.c;
+      ctx.fill();
+      p.y += p.d;
+      if (p.y > canvas.height) p.y = -10;
+    }
+    requestAnimationFrame(draw);
   }
-}
-function applyPenguin(el,av){
-  ensurePenguinParts(el);
-  el.style.setProperty("--p",av.color||"#3b82f6");
-  el.querySelectorAll(".acc").forEach(x=>x.remove());
-  if(av.head){const h=document.createElement("div");h.className=`acc ${av.head}`;el.append(h);}
-  if(av.body){const b=document.createElement("div");b.className=`acc ${av.body}`;el.append(b);}
-  if(av.effect)el.classList.add(av.effect);
-}
-applyPenguin($("penguinPreview"),avatar);
-updateHeader();
-
-/* ==========================================================
-   TASKS
-========================================================== */
-function renderTasks(){
-  const ul=$("taskList"); ul.innerHTML="";
-  tasks.forEach((t,i)=>{
-    const li=document.createElement("li");
-    li.innerHTML=`<div><b>${t.name}</b><br><span class='muted small'>${t.category} • ${t.xp} XP</span></div>
-    <div class='row'><button class='btn ghost'>Focus</button>
-    <button class='btn'>Done</button></div>`;
-    li.querySelectorAll("button")[0].onclick=()=>openCall("Study");
-    li.querySelectorAll("button")[1].onclick=()=>{
-      xp+=parseFloat(t.xp);coins+=Math.floor(t.xp/5)+1;
-      tasks.splice(i,1);saveAll();updateHeader();renderTasks();toast(`${avatar.name}`,`+${t.xp} XP • +${Math.floor(t.xp/5)+1} coins`);
-    };
-    ul.append(li);
-  });
-}
-$("addTask").onclick=()=>{
-  const n=$("taskName").value.trim(),xpv=parseFloat($("taskXP").value)||0,cat=$("taskCategory").value||"General";
-  if(!n||xpv<=0)return alert("Enter task + XP");
-  tasks.push({name:n,xp:xpv,category:cat}); saveAll(); renderTasks();
-  $("taskName").value=$("taskXP").value="";
-};
-function renderCategories(){
-  const s=$("taskCategory"); s.innerHTML="";
-  cats.forEach(c=>{const o=document.createElement("option");o.textContent=c;s.append(o);});
-}
-renderCategories(); renderTasks();
-
-/* ==========================================================
-   TOAST
-========================================================== */
-function toast(t,m){
-  $("toastTitle").textContent=t; $("toastMsg").textContent=m;
-  applyPenguin($("toastPenguin"),avatar);
-  $("toast").classList.remove("hidden");
-  clearTimeout(toast._t); toast._t=setTimeout(()=>$("toast").classList.add("hidden"),3000);
+  draw();
+  setTimeout(() => canvas.remove(), 4000);
 }
 
-/* ==========================================================
-   CALLS / ANIMATIONS
-========================================================== */
-const callBg=$("callBg"),callPenguin=$("callPenguin");
-const BG={Study:"study",Exercise:"exercise",Eat:"eat",Bath:"bath",Sleep:"sleep",Chill:"study"};
-const ICON={Study:"✍️",Exercise:"🏋️",Eat:"🍲",Bath:"🫧",Sleep:"💤"};
-function openCall(mode="Chill"){
-  $("callOverlay").classList.remove("hidden");
-  callBg.className="call-bg "+(BG[mode]||"study");
-  $("callAction").textContent=ICON[mode]||"";
-  applyPenguin(callPenguin,avatar);
-  animatePenguin(callPenguin,mode);
+// ========== Persistent Storage ==========
+function saveAll() {
+  localStorage.setItem('penguinData', JSON.stringify(state));
 }
-function animatePenguin(el,mode){
-  const l=el.querySelector(".wing.left"),r=el.querySelector(".wing.right"),b=el.querySelector(".body");
-  clearInterval(el._ani);let t=0;
-  el._ani=setInterval(()=>{t++;
-    const s=Math.sin(t/5);
-    if(mode==="Exercise"){l.style.transform=`rotate(${-25+s*20}deg)`;r.style.transform=`rotate(${25-s*20}deg)`;}
-    else{l.style.transform=`rotate(${-8+s*4}deg)`;r.style.transform=`rotate(${8-s*4}deg)`;}
-    b.style.transform=`translateY(${s*2}px)`;
-  },60);
+function loadAll() {
+  const s = localStorage.getItem('penguinData');
+  if (s) state = { ...state, ...JSON.parse(s) };
 }
-$("closeCall").onclick=()=>{$("callOverlay").classList.add("hidden");clearInterval(callPenguin._ani);};
-$$(".callMode").forEach(b=>b.onclick=()=>openCall(b.dataset.mode));
-$("meetBtn").onclick=()=>window.open("https://meet.new","_blank");
 
-/* ==========================================================
-   SHOP
-========================================================== */
-const ITEMS=[
-  {id:"headphones",type:"head",name:"Headphones",price:10,icon:"🎧"},
-  {id:"beanie",type:"head",name:"Beanie",price:6,icon:"🧢"},
-  {id:"glasses",type:"head",name:"Glasses",price:8,icon:"👓"},
-  {id:"scarf",type:"body",name:"Scarf",price:7,icon:"🧣"},
-  {id:"aura",type:"effect",name:"Aura",price:12,icon:"✨"},
-  {id:"rainbow",type:"effect",name:"Rainbow",price:18,icon:"🌈"},
-];
-function renderShop(){
-  const g=$("shopGrid");g.innerHTML="";$("coinsShop").textContent=Math.floor(coins);
-  applyPenguin($("shopPenguin"),avatar);
-  ITEMS.forEach(it=>{
-    const d=document.createElement("div");d.className="shop-item"+(owned.includes(it.id)?" owned":"");
-    d.innerHTML=`<div>${it.icon}</div><div class='small'>${it.name}</div><div class='price'>${it.price}</div>`;
-    d.onclick=()=>buyItem(it);
-    g.append(d);
-  });
+// ========== UI Helpers ==========
+function $(sel) { return document.querySelector(sel); }
+function createEl(tag, cls, text) {
+  const el = document.createElement(tag);
+  if (cls) el.className = cls;
+  if (text) el.textContent = text;
+  return el;
 }
-function buyItem(it){
-  if(owned.includes(it.id)){equip(it);toast(avatar.name,`${it.name} equipped!`);return;}
-  if(coins<it.price){toast(avatar.name,"Not enough coins");return;}
-  coins-=it.price;owned.push(it.id);equip(it);saveAll();renderShop();updateHeader();toast(avatar.name,`Bought ${it.name}!`);
+
+// Toast
+let toastTimeout;
+function toast(title, msg) {
+  const t = $('#toast');
+  $('#toastTitle').textContent = title;
+  $('#toastMsg').textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimeout);
+  toastTimeout = setTimeout(() => t.classList.remove('show'), 3500);
 }
-function equip(it){
-  if(it.type==="head")avatar.head=it.id;
-  if(it.type==="body")avatar.body=it.id;
-  if(it.type==="effect")avatar.effect=it.id;
-  applyPenguin($("penguinPreview"),avatar);saveAll();
-}
-renderShop();
 
-/* ==========================================================
-   EXPORT / IMPORT
-========================================================== */
-$("exportJSON").onclick=()=>{
-  const blob=new Blob([JSON.stringify({xp,coins,tasks,avatar,owned},null,2)],{type:"application/json"});
-  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="penguin-data.json";a.click();
-};
-$("exportCSV").onclick=()=>{
-  let csv="Name,XP\n";tasks.forEach(t=>csv+=`${t.name},${t.xp}\n`);
-  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download="penguin.csv";a.click();
-};
-$("importFile").onchange=e=>{
-  const f=e.target.files[0];if(!f)return;const r=new FileReader();
-  r.onload=()=>{try{
-    const d=JSON.parse(r.result);
-    xp=d.xp||xp;coins=d.coins||coins;tasks=d.tasks||tasks;avatar=d.avatar||avatar;owned=d.owned||owned;
-    saveAll();updateHeader();renderTasks();renderShop();toast(avatar.name,"Data imported");
-  }catch{alert("Invalid file");}};r.readAsText(f);
-};
-
-/* ==========================================================
-   RACE — Shared Pomodoro
-========================================================== */
-const bc=new BroadcastChannel("penguinRace");
-let raceRole=null,raceCode=null,participants=[],isHost=false;
-let raceTimer=null,seconds=0,phase="focus",paused=false;
-let leaderboard={};
-
-/* ----- Race UI Helpers ----- */
-function showRaceModal(){ $("raceModal").classList.remove("hidden"); }
-function hideRaceModal(){ $("raceModal").classList.add("hidden"); }
-$("raceBtn").onclick=showRaceModal; $("closeRaceModal").onclick=hideRaceModal;
-
-/* ----- Create / Join ----- */
-$("raceCreate").onclick=()=>{
-  raceCode=Math.random().toString(36).slice(2,7).toUpperCase();
-  isHost=true;participants=[{name:avatar.name,score:0}];
-  $("raceRoomCode").textContent=raceCode;
-  $("raceStepChoose").classList.add("hidden");
-  $("raceStepHost").classList.remove("hidden");
-  bc.postMessage({type:"roomCreated",code:raceCode});
-};
-$("raceJoin").onclick=()=>{
-  const code=$("raceJoinCode").value.trim().toUpperCase();
-  if(!code)return alert("Enter code");
-  raceCode=code;isHost=false;
-  bc.postMessage({type:"joinRequest",code:raceCode,name:avatar.name});
-  $("raceStepChoose").classList.add("hidden");
-  $("raceStepJoin").classList.remove("hidden");
-  $("raceJoinedCode").textContent=code;
-};
-
-/* ----- Broadcast Channel Events ----- */
-bc.onmessage=e=>{
-  const d=e.data;
-  if(d.type==="roomCreated")return; // ignore self
-  if(d.type==="joinRequest"&&isHost&&d.code===raceCode){
-    participants.push({name:d.name,score:0});
-    updateParticipants(); bc.postMessage({type:"joinedList",code:raceCode,list:participants});
+// ========== Onboarding ==========
+window.addEventListener('DOMContentLoaded', () => {
+  loadAll();
+  if (!localStorage.getItem('penguinUser')) {
+    $('#onboard').classList.add('shown');
+  } else {
+    $('#onboard').remove();
+    initApp();
   }
-  if(d.type==="joinedList"&&!isHost&&d.code===raceCode){
-    participants=d.list;updateJoinedList();
-  }
-  if(d.type==="startRace"&&d.code===raceCode){
-    hideRaceModal();startRaceTimer(d.seconds||1500,d.phase||"focus");
-  }
-  if(d.type==="syncTick"&&d.code===raceCode&&!isHost){
-    seconds=d.seconds;phase=d.phase;updateRaceTimer();
-  }
-  if(d.type==="updateBoard"&&d.code===raceCode){
-    leaderboard=d.board;updateBoard();
-  }
+});
+
+$('#ob-continue').onclick = () => {
+  const user = $('#ob-username').value.trim();
+  const pass = $('#ob-password').value.trim();
+  if (user && pass) {
+    localStorage.setItem('penguinUser', user);
+    localStorage.setItem('penguinPass', pass);
+    $('#onboard').remove();
+    toast('Welcome', `Hi ${user}!`);
+    initApp();
+  } else toast('Error', 'Please fill in username and password');
 };
 
-/* ----- Host Controls ----- */
-function updateParticipants(){
-  const ul=$("raceParticipants");ul.innerHTML="";
-  participants.forEach(p=>{const li=document.createElement("li");li.textContent=p.name;ul.append(li);});
+// ========== App Initialization ==========
+function initApp() {
+  updateHeader();
+  renderTasks();
+  renderShop();
+  dailyChallengesInit();
+  penguinEmotionsInit();
+  applyAvatar();
 }
-function updateJoinedList(){
-  const ul=$("raceParticipantsYou");ul.innerHTML="";
-  participants.forEach(p=>{const li=document.createElement("li");li.textContent=p.name;ul.append(li);});
+
+// ========== Header Update ==========
+function updateHeader() {
+  $('#lvl').textContent = state.level;
+  $('#xp').textContent = state.xp.toFixed(1);
+  $('#coins').textContent = state.coins;
+  $('#coinCount').textContent = state.coins;
+  $('#metaLine').textContent = `Level ${state.level} • XP ${state.xp.toFixed(1)} • Coins ${state.coins}`;
 }
-$("raceStart").onclick=()=>{
-  hideRaceModal();startRaceTimer(1500,"focus");
-  bc.postMessage({type:"startRace",code:raceCode,seconds:1500,phase:"focus"});
+
+// ========== Avatar ==========
+$('#saveAvatar').onclick = () => {
+  state.avatar.name = $('#nameInput').value || "Pingu";
+  state.avatar.head = $('#headAcc').value;
+  state.avatar.body = $('#bodyAcc').value;
+  state.avatar.effect = $('#effectAcc').value;
+  toast('Avatar', 'Saved successfully!');
+  saveAll();
+  applyAvatar();
 };
-$("raceCloseRoom").onclick=()=>{hideRaceModal();bc.postMessage({type:"roomClosed",code:raceCode});};
 
-/* ==========================================================
-   RACE ROOM LOGIC
-========================================================== */
-function startRaceTimer(sec,ph){
-  $("raceRoom").classList.remove("hidden");
-  $("rrCode").textContent=raceCode;
-  seconds=sec;phase=ph;paused=false;
-  leaderboard={};participants.forEach(p=>leaderboard[p.name]=0);
-  updateBoard();updateRaceTimer();
-  if(isHost){clearInterval(raceTimer);raceTimer=setInterval(tickRace,1000);}
-}
-function tickRace(){
-  if(paused)return;
-  seconds--;
-  bc.postMessage({type:"syncTick",code:raceCode,seconds,phase});
-  updateRaceTimer();
-  if(seconds<=0){
-    clearInterval(raceTimer);
-    if(phase==="focus")startBreak();
-    else endRace();
-  }
-}
-function updateRaceTimer(){
-  const m=Math.floor(seconds/60),s=seconds%60;
-  $("rrTimer").textContent=`${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
-  $("rrPhase").textContent=phase==="focus"?"Focus":"Break";
-}
-function startBreak(){
-  phase="break";seconds=300;updateRaceTimer();
-  bc.postMessage({type:"syncTick",code:raceCode,seconds,phase});
-  toast("Break","Mini-games unlocked for 5 min!");
-  if(isHost)raceTimer=setInterval(tickRace,1000);
-  $("rrGames").classList.remove("hidden");
-}
-function endRace(){
-  $("rrGames").classList.add("hidden");
-  $("rrPodium").classList.remove("hidden");
-  const ol=$("rrPodiumList");ol.innerHTML="";
-  const arr=Object.entries(leaderboard).sort((a,b)=>b[1]-a[1]);
-  arr.forEach(([n,s])=>{const li=document.createElement("li");li.textContent=`${n} — ${s} XP`;ol.append(li);});
-}
-$("rrPodiumClose").onclick=()=>{$("rrPodium").classList.add("hidden");$("raceRoom").classList.add("hidden");};
-$("rrExit").onclick=()=>{$("raceRoom").classList.add("hidden");clearInterval(raceTimer);};
-
-/* ----- Participant Task Complete ----- */
-$("rrMarkDone").onclick=()=>{
-  const n=avatar.name;leaderboard[n]=(leaderboard[n]||0)+25;
-  xp+=25;coins+=5;saveAll();updateHeader();
-  bc.postMessage({type:"updateBoard",code:raceCode,board:leaderboard});
-  updateBoard();
-};
-function updateBoard(){
-  const ul=$("rrLeaderboard");ul.innerHTML="";
-  Object.entries(leaderboard).forEach(([n,s])=>{
-    const li=document.createElement("li");li.textContent=`${n}: ${s}`;ul.append(li);
-  });
-}
-
-/* ==========================================================
-   MINIGAMES (simple placeholders)
-========================================================== */
-$$(".rr-game").forEach(btn=>{
-  btn.onclick=()=>{
-    $("rrGameArea").classList.remove("hidden");
-    $("rrGameTitle").textContent=btn.textContent;
-    const c=$("rrGameCanvas");
-    if(btn.dataset.game==="reaction")c.innerHTML="<p>Wait for green then click!</p>";
-    if(btn.dataset.game==="tictactoe")c.innerHTML="<p>Tic-Tac-Toe coming soon 🕹️</p>";
-    if(btn.dataset.game==="connect4")c.innerHTML="<p>Connect 4 grid mockup 🎮</p>";
+document.querySelectorAll('.chip').forEach(btn => {
+  btn.onclick = () => {
+    state.avatar.color = btn.dataset.color;
+    applyAvatar();
   };
 });
-$("rrCloseGame").onclick=()=>$("rrGameArea").classList.add("hidden");
 
-/* ==========================================================
-   INITIALIZATION
-========================================================== */
-updateHeader();
-toast(avatar.name,"Welcome back!");
+function applyAvatar() {
+  const penguin = $('#penguin');
+  penguin.style.background = 'none';
+  penguin.querySelector('.p-body').style.background = state.avatar.color;
+  penguin.className = `penguin ${state.avatar.head} ${state.avatar.body} ${state.avatar.effect}`;
+  $('#avName').textContent = state.avatar.name;
+  saveAll();
+}
+
+// ========== Tasks ==========
+$('#addTask').onclick = () => {
+  const name = $('#taskName').value.trim();
+  const cat = $('#taskCat').value || 'General';
+  const xp = parseFloat($('#taskXP').value) || 0.25;
+  if (!name) return toast('Task', 'Enter a task name');
+  state.tasks.push({ name, cat, xp, done: false });
+  $('#taskName').value = ''; $('#taskXP').value = '';
+  renderTasks();
+  saveAll();
+};
+
+function renderTasks() {
+  const list = $('#taskList');
+  list.innerHTML = '';
+  state.tasks.forEach((t, i) => {
+    const li = createEl('li');
+    const left = createEl('div', '', `${t.name} (${t.cat})`);
+    const btns = createEl('div', 'row');
+    const focus = createEl('button', 'btn', 'Focus');
+    const del = createEl('button', 'btn danger', '✖');
+    focus.onclick = () => startPomodoro(t, i);
+    del.onclick = () => { state.tasks.splice(i, 1); renderTasks(); saveAll(); };
+    btns.append(focus, del);
+    li.append(left, btns);
+    list.append(li);
+  });
+}
+
+// ========== Pomodoro ==========
+let pomoTimer, timeLeft = 0;
+
+function startPomodoro(task) {
+  state.currentTask = task;
+  $('#pomo').classList.add('show');
+  $('#pomoTitle').textContent = `Focus: ${task.name}`;
+  $('#timerText').textContent = `${state.focusMins}:00`;
+  timeLeft = state.focusMins * 60;
+  state.pomodoroActive = true;
+  runTimer();
+}
+
+function runTimer() {
+  clearInterval(pomoTimer);
+  pomoTimer = setInterval(() => {
+    if (timeLeft <= 0) {
+      clearInterval(pomoTimer);
+      finishPomodoro();
+    } else {
+      timeLeft--;
+      const min = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+      const sec = (timeLeft % 60).toString().padStart(2, '0');
+      $('#timerText').textContent = `${min}:${sec}`;
+    }
+  }, 1000);
+}
+
+$('#pauseBtn').onclick = () => {
+  if (state.pomodoroActive) {
+    clearInterval(pomoTimer);
+    state.pomodoroActive = false;
+    toast('Pomodoro', 'Paused');
+  } else {
+    state.pomodoroActive = true;
+    runTimer();
+    toast('Pomodoro', 'Resumed');
+  }
+};
+
+$('#doneBtn').onclick = finishPomodoro;
+
+function finishPomodoro() {
+  $('#pomo').classList.remove('show');
+  toast('Great job!', `Finished ${state.currentTask.name}!`);
+  state.xp += state.currentTask.xp;
+  state.coins += Math.round(state.currentTask.xp);
+  confettiBurst();
+  checkChallenges();
+  updateHeader();
+  saveAll();
+  state.pomodoroActive = false;
+}
+
+// ========== Daily Challenges ==========
+function dailyChallengesInit() {
+  const todayKey = `ch-${state.today}`;
+  if (!localStorage.getItem(todayKey)) {
+    state.challenges = [
+      { id: 1, text: 'Complete 2 Pomodoros', target: 2, done: 0, reward: 20 },
+      { id: 2, text: 'Earn 10 XP today', target: 10, done: 0, reward: 15 },
+      { id: 3, text: 'Add 3 tasks', target: 3, done: 0, reward: 10 }
+    ];
+    localStorage.setItem(todayKey, JSON.stringify(state.challenges));
+  } else {
+    state.challenges = JSON.parse(localStorage.getItem(todayKey));
+  }
+  renderChallenges();
+}
+
+function renderChallenges() {
+  const list = $('#challenges');
+  list.innerHTML = '';
+  state.challenges.forEach(ch => {
+    const li = createEl('li');
+    li.textContent = `${ch.text} — ${ch.done}/${ch.target} `;
+    if (ch.done >= ch.target) li.append('✅');
+    list.append(li);
+  });
+}
+
+function checkChallenges() {
+  state.challenges.forEach(ch => {
+    if (ch.text.includes('Pomodoro')) ch.done++;
+    if (state.xp >= 10 && ch.id === 2) ch.done = ch.target;
+  });
+  const completed = state.challenges.filter(ch => ch.done >= ch.target && !ch.rewarded);
+  completed.forEach(ch => {
+    ch.rewarded = true;
+    state.coins += ch.reward;
+    toast('🎯 Challenge Complete!', `${ch.text} +${ch.reward} coins`);
+    confettiBurst();
+  });
+  renderChallenges();
+  updateHeader();
+  saveAll();
+}
+
+// ========== Emotional Penguin ==========
+function penguinEmotionsInit() {
+  setInterval(() => {
+    const moods = [
+      "Let's focus together! 🧠",
+      "Hydrate, take a short stretch!",
+      "Proud of your consistency 💪",
+      "Every Pomodoro counts!",
+      "Your future self will thank you."
+    ];
+    const msg = moods[Math.floor(Math.random() * moods.length)];
+    toast(state.avatar.name, msg);
+  }, 60000); // every minute
+}
+
+// ========== Shop ==========
+function renderShop() {
+  const items = [
+    { name: "Beanie", price: 10 },
+    { name: "Glasses", price: 15 },
+    { name: "Crown", price: 25 },
+    { name: "Headphones", price: 18 },
+    { name: "Scarf", price: 8 },
+    { name: "Cape", price: 20 },
+    { name: "Backpack", price: 12 },
+    { name: "Aura", price: 30 },
+    { name: "Frost", price: 22 },
+    { name: "Shadow", price: 24 }
+  ];
+  const shopDiv = $('#shop');
+  shopDiv.innerHTML = '';
+  items.forEach(it => {
+    const d = createEl('div', 'shop-item');
+    d.innerHTML = `<div>${it.name}</div><div class="price">${it.price} coins</div>`;
+    d.onclick = () => buyItem(it);
+    shopDiv.append(d);
+  });
+}
+function buyItem(it) {
+  if (state.coins >= it.price) {
+    state.coins -= it.price;
+    state.shop.push(it.name);
+    toast('Shop', `Bought ${it.name}!`);
+    updateHeader();
+    saveAll();
+  } else toast('Shop', 'Not enough coins!');
+}
+
+// ========== Race Mode ==========
+const channel = new BroadcastChannel('penguinRace');
+$('#raceBtn').onclick = () => {
+  $('#race').classList.add('show');
+  $('#raceStage').innerHTML = `
+    <p>Join or create a race:</p>
+    <div class="row center">
+      <button id="createRace" class="btn primary">Create Race</button>
+      <button id="joinRace" class="btn ghost">Join Race</button>
+    </div>`;
+};
+$('#exitRace').onclick = () => $('#race').classList.remove('show');
+
+channel.onmessage = (e) => {
+  if (e.data.type === 'raceStart') {
+    $('#raceStage').innerHTML = `<h3>🏁 Race started! Focus time for all!</h3>`;
+    toast('Race', 'The group Pomodoro has begun!');
+    startPomodoro({ name: 'Team Focus', xp: 2 });
+  }
+};
+document.body.addEventListener('click', e => {
+  if (e.target.id === 'createRace') {
+    toast('Race', 'Race created — waiting participants...');
+    setTimeout(() => channel.postMessage({ type: 'raceStart' }), 3000);
+  }
+  if (e.target.id === 'joinRace') toast('Race', 'Joined existing race!');
+});
+
+// ========== Import / Export ==========
+$('#exportBtn').onclick = () => {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'penguinData.json';
+  a.click();
+};
+
+$('#importFile').onchange = e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = evt => {
+    const data = JSON.parse(evt.target.result);
+    state = { ...state, ...data };
+    toast('Import', 'Data loaded successfully!');
+    updateHeader(); renderTasks(); renderShop(); renderChallenges();
+  };
+  reader.readAsText(file);
+};
+
+// ========== Settings ==========
+$('#openSettings').onclick = () => $('#settings').classList.add('shown');
+$('#closeSettings').onclick = () => $('#settings').classList.remove('shown');
+$('#recalcBtn').onclick = () => { updateHeader(); toast('Stats', 'Recalculated'); };
+$('#wipeBtn').onclick = () => { localStorage.clear(); location.reload(); };
+
+// ========== Fin ==========
