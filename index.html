@@ -1,176 +1,350 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="tech">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🐧 Penguin Companion — XP Planner</title>
-<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>🐧 Penguin Companion — XP Planner</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <!-- Decorative, animated circuit background -->
+  <canvas id="circuitBG" aria-hidden="true"></canvas>
 
-<header>
-  <h1>🐧 Penguin Companion — XP Planner</h1>
-  <div id="levelLine">
-    <div>Level 1 • XP 0 • Coins 0</div>
-    <div id="progressContainer"><div id="progressBar"></div></div>
-  </div>
-  <button id="settingsBtn">⚙️</button>
-</header>
-
-<main class="container">
-  <!-- TASKS -->
-  <section class="card">
-    <h2>✅ Tasks</h2>
-    <div class="row">
-      <input id="taskInput" placeholder="Task">
-      <input id="taskXP" placeholder="XP" type="number" step="0.25">
-      <button id="addTask">Add</button>
+  <!-- Header -->
+  <header class="app-header">
+    <div class="brand">
+      <img src="" alt="" aria-hidden="true" class="brand-pinguin" />
+      <h1>Penguin Companion — XP Planner</h1>
     </div>
-    <ul id="taskList"></ul>
-  </section>
 
-  <!-- REWARDS -->
-  <section class="card">
-    <h2>🎁 Rewards</h2>
-    <div class="row">
-      <input id="rewardInput" placeholder="Reward">
-      <input id="rewardCost" placeholder="Cost" type="number" step="0.25">
-      <button id="addReward">Add</button>
+    <div class="level-wrap">
+      <div id="levelText">Level 1 • XP 0 • Coins 0</div>
+      <div class="progress"><span id="xpBar" style="width:0%"></span></div>
     </div>
-    <ul id="rewardList"></ul>
-  </section>
 
-  <!-- CATEGORY STATS -->
-  <section class="card">
-    <h2>📊 Category Stats</h2>
-    <div id="categoryStats">
-      <div class="stat"><span>Study</span><div class="bar"><div id="barStudy"></div></div></div>
-      <div class="stat"><span>Work</span><div class="bar"><div id="barWork"></div></div></div>
-      <div class="stat"><span>Self-Care</span><div class="bar"><div id="barSelf"></div></div></div>
-      <div class="stat"><span>Other</span><div class="bar"><div id="barOther"></div></div></div>
+    <button id="openSettings" class="icon-btn" aria-label="Open settings">⚙️</button>
+  </header>
+
+  <!-- Main grid -->
+  <main class="grid">
+
+    <!-- Tasks -->
+    <section class="card" id="tasksCard">
+      <div class="card-title">✅ Tasks</div>
+      <div class="row inputs">
+        <input id="taskName" placeholder="Task name" />
+        <select id="taskCategory">
+          <option value="Study">Study</option>
+          <option value="Work">Work</option>
+          <option value="Self-Care">Self-Care</option>
+          <option value="Other">Other</option>
+        </select>
+        <input id="taskXP" type="number" step="0.25" min="0" placeholder="XP (e.g. 0.25)" />
+        <button id="taskAdd" class="primary">Add</button>
+      </div>
+      <ul id="taskList" class="list"></ul>
+    </section>
+
+    <!-- Rewards -->
+    <section class="card" id="rewardsCard">
+      <div class="card-title">🎁 Rewards</div>
+      <div class="row inputs">
+        <input id="rewardName" placeholder="Reward (e.g., Ice cream)" />
+        <input id="rewardCost" type="number" step="0.25" min="0" placeholder="Cost (XP)" />
+        <button id="rewardAdd" class="primary">Add</button>
+      </div>
+      <ul id="rewardList" class="list"></ul>
+    </section>
+
+    <!-- Category Stats -->
+    <section class="card" id="statsCard">
+      <div class="card-title">📊 Category Stats</div>
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-header"><span>Study</span><b id="pctStudy">0%</b></div>
+          <div class="stat-bar"><span id="barStudy" style="width:0%"></span></div>
+        </div>
+        <div class="stat">
+          <div class="stat-header"><span>Work</span><b id="pctWork">0%</b></div>
+          <div class="stat-bar"><span id="barWork" style="width:0%"></span></div>
+        </div>
+        <div class="stat">
+          <div class="stat-header"><span>Self-Care</span><b id="pctSelf">0%</b></div>
+          <div class="stat-bar"><span id="barSelf" style="width:0%"></span></div>
+        </div>
+        <div class="stat">
+          <div class="stat-header"><span>Other</span><b id="pctOther">0%</b></div>
+          <div class="stat-bar"><span id="barOther" style="width:0%"></span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Time Blocking -->
+    <section class="card" id="scheduleCard">
+      <div class="card-title">📅 Time-Blocking (15-min)</div>
+      <div class="row inputs">
+        <input id="blockTitle" placeholder="Block title" />
+        <input id="blockStart" type="time" step="900" />
+        <input id="blockEnd" type="time" step="900" />
+        <input id="blockColor" type="color" value="#3b82f6" />
+        <button id="addBlock" class="primary">Add</button>
+        <button id="addFromTasks" class="ghost">Add from Tasks</button>
+        <button id="clearSchedule" class="danger">Clear Schedule</button>
+      </div>
+      <div class="schedule">
+        <div id="scheduleNow" class="schedule-now">🐧</div>
+        <div id="scheduleGrid" class="schedule-grid" aria-label="Day timeline"></div>
+      </div>
+    </section>
+
+    <!-- Pomodoro & Calls -->
+    <section class="card" id="pomoCard">
+      <div class="card-title">⏱️ Pomodoro & 📞 Calls</div>
+      <div class="row inputs">
+        <label>Focus <input id="pomoFocus" type="number" min="1" value="25" /></label>
+        <label>Short <input id="pomoShort" type="number" min="1" value="5" /></label>
+        <label>Long <input id="pomoLong" type="number" min="1" value="15" /></label>
+        <button id="savePomo" class="ghost">Save</button>
+      </div>
+      <div class="row">
+        <button id="callStudy" class="primary">🎥 Call Penguin — Study</button>
+        <button id="callExercise" class="ghost">Exercise</button>
+        <button id="callEat" class="ghost">Eat</button>
+        <button id="callBath" class="ghost">Bath</button>
+        <button id="callSleep" class="ghost">Sleep</button>
+        <button id="openPomodoro" class="danger">🍅 Open Pomodoro</button>
+      </div>
+      <small class="muted">Ambient Lab hum is muted by default; toggle in full-screen call. Pomodoro and call are independent.</small>
+    </section>
+
+    <!-- Tools -->
+    <section class="card" id="toolsCard">
+      <div class="card-title">🧰 Tools</div>
+      <div class="row">
+        <button id="openCalc" class="primary">🧮 Open Calculator</button>
+        <button id="openSearch" class="primary">🔎 Open Quick Search</button>
+      </div>
+      <div class="row">
+        <input id="alarmTime" type="time" />
+        <input id="alarmLabel" placeholder="Alarm label" />
+        <select id="alarmSound">
+          <option value="soft">Penguin Beep-Boo</option>
+          <option value="beep">Digital Beep</option>
+          <option value="ping">Clean Ping</option>
+        </select>
+        <button id="addAlarm" class="primary">Add</button>
+      </div>
+      <ul id="alarmList" class="list"></ul>
+      <hr />
+      <div class="row">
+        <button id="exportJSON" class="ghost">📤 Export JSON</button>
+        <button id="exportCSV" class="ghost">📄 Export CSV</button>
+        <input id="importFile" type="file" accept=".json,.csv" hidden />
+        <button id="importData" class="ghost">📥 Import</button>
+      </div>
+    </section>
+
+    <!-- History -->
+    <section class="card" id="historyCard">
+      <div class="card-title">🗓️ History (Today)</div>
+      <div id="historyToday" class="history"></div>
+      <button id="clearToday" class="danger small">🧹 Clear Today’s History</button>
+    </section>
+
+    <!-- Shop (with avatar preview) -->
+    <section class="card" id="shopCard">
+      <div class="card-title">🛍️ Penguin Shop</div>
+      <div class="shop-preview">
+        <div id="shopPreviewAvatar" class="penguin3d" aria-label="Avatar preview"></div>
+        <div class="shop-stats">
+          <div><b>Coins:</b> <span id="coinsText">0</span></div>
+          <div><b>Owned:</b> <span id="ownedCount">0</span></div>
+        </div>
+      </div>
+      <h4 class="sep">Accessories</h4>
+      <div id="shopAccessories" class="shop-grid"></div>
+      <h4 class="sep">Themes</h4>
+      <div id="shopThemes" class="shop-grid"></div>
+      <h4 class="sep">Effects</h4>
+      <div id="shopEffects" class="shop-grid"></div>
+    </section>
+
+    <!-- Race Mode -->
+    <section class="card" id="raceCard">
+      <div class="card-title">🏁 Race Mode</div>
+      <div id="raceLobby" class="race-lobby">
+        <div class="row">
+          <button id="createRace" class="primary">Create Room</button>
+          <input id="joinCode" placeholder="Enter code" />
+          <button id="joinRace" class="ghost">Join</button>
+        </div>
+        <div id="raceInfo" class="muted"></div>
+        <div id="raceParticipants" class="race-list"></div>
+        <div class="row">
+          <button id="startRace" class="primary" disabled>Start Pomodoro</button>
+          <button id="closeRace" class="danger" disabled>Close Room</button>
+        </div>
+      </div>
+      <div id="raceBoard" class="race-board" hidden>
+        <div class="row">
+          <div class="race-code">Code: <b id="raceCodeView">—</b></div>
+          <button id="exitRace" class="danger small">Leave</button>
+        </div>
+        <ul id="raceLeaderboard" class="list"></ul>
+        <div id="miniGames" class="minigames" hidden>
+          <div class="card-title small">🎮 Break Mini-Games</div>
+          <div class="row">
+            <button id="mgTTT">Tic-Tac-Toe</button>
+            <button id="mgC4">Connect-4</button>
+            <button id="mgChess" disabled>Chess (soon)</button>
+          </div>
+          <div id="mgStage"></div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Settings (sidebar) -->
+  <aside id="settingsPanel" aria-hidden="true">
+    <div class="settings-head">
+      <div class="title">⚙️ Settings</div>
+      <button id="closeSettings" class="icon-btn">✖</button>
     </div>
-  </section>
 
-  <!-- SHOP -->
-  <section class="card" id="shopCard">
-    <h2>🛍️ Penguin Shop</h2>
-    <div id="shopGrid"></div>
-  </section>
-
-  <!-- AVATAR -->
-  <section class="card" id="avatarCard">
-    <h2>🐧 My Penguin</h2>
-    <div id="penguinPreview" class="penguin"></div>
-    <div id="avatarNameDisplay">Hi, I’m Pingu!</div>
-    <div class="row">
-      <input id="avatarName" placeholder="Name (e.g., Penny)">
-      <input id="avatarColor" type="color" value="#0ea5e9">
-    </div>
-    <div class="row">
-      <select id="avatarHead">
-        <option value="">Head: none</option>
-        <option value="beanie">Beanie</option>
-        <option value="glasses">Glasses</option>
-        <option value="cap">Cap</option>
+    <div class="settings-section">
+      <label class="lbl">Default Theme</label>
+      <select id="optTheme">
+        <option value="tech">Tech Lab</option>
+        <option value="arctic">Arctic Base</option>
+        <option value="sunset">Sunset Beach</option>
+        <option value="space">Space</option>
       </select>
-      <select id="avatarBody">
-        <option value="">Body: none</option>
-        <option value="hoodie">Hoodie</option>
-        <option value="cape">Cape</option>
+    </div>
+
+    <div class="settings-section">
+      <label class="lbl">Language</label>
+      <select id="optLang">
+        <option value="en">English</option>
+        <option value="es">Español</option>
       </select>
     </div>
-    <select id="avatarEffect">
-      <option value="">Effect: none</option>
-      <option value="aura">Aura</option>
-    </select>
-    <button id="saveAvatar">Save Avatar</button>
-  </section>
 
-  <!-- TOOLS -->
-  <section class="card" id="toolsCard">
-    <h2>🧰 Tools</h2>
-    <button id="openCalcBtn">🧮 Calculator</button>
-    <button id="openSearchBtn">🔎 Quick Search</button>
-    <button id="addAlarmBtn">⏰ Add Alarm</button>
-    <button id="exportBtn">📤 Export JSON</button>
-    <button id="exportCsvBtn">📄 Export CSV</button>
-    <input id="importFile" type="file" style="display:none">
-    <button id="importBtn">📥 Import</button>
-  </section>
+    <div class="settings-section">
+      <label class="lbl">Default Sound</label>
+      <select id="optSound">
+        <option value="soft">Soft Digital</option>
+        <option value="beep">Beep-Boop</option>
+        <option value="ping">Pure Ping</option>
+      </select>
+      <label class="lbl">Volume</label>
+      <input id="optVolume" type="range" min="0" max="100" value="40" />
+    </div>
 
-  <!-- HISTORY -->
-  <section class="card" id="historyCard">
-    <h2>📅 History (Today)</h2>
-    <div id="historyList"></div>
-  </section>
+    <hr />
 
-  <!-- RACE -->
-  <section class="card" id="raceSection"></section>
+    <div class="settings-section">
+      <div class="title small">🐧 Avatar</div>
+      <div id="settingsAvatarPreview" class="penguin3d"></div>
+      <div class="row inputs">
+        <input id="setAName" placeholder="Name" />
+        <input id="setAColor" type="color" value="#7c3aed" />
+      </div>
+      <div class="row inputs">
+        <select id="setAHead"></select>
+        <select id="setABody"></select>
+      </div>
+      <select id="setAEffect"></select>
+      <button id="saveAvatarSettings" class="primary full">Save Avatar</button>
+    </div>
 
-</main>
+    <hr />
+    <div class="settings-section">
+      <div class="title small">Pomodoro Defaults</div>
+      <div class="row inputs">
+        <label>Focus <input id="setPF" type="number" min="1" value="25"></label>
+        <label>Short <input id="setPS" type="number" min="1" value="5"></label>
+        <label>Long <input id="setPL" type="number" min="1" value="15"></label>
+      </div>
+      <label class="chk"><input id="setAutoNext" type="checkbox"> Auto-start next phase</label>
+      <button id="recalcBtn" class="ghost full">🟡 Recalculate XP & Coins</button>
+      <div class="row">
+        <button id="resetTodayBtn" class="ghost">Reset Today Only</button>
+        <button id="clearAllBtn" class="danger">Clear All Data</button>
+      </div>
+    </div>
+  </aside>
 
-<!-- SETTINGS SIDEBAR -->
-<aside id="settingsPanel">
-  <h2>⚙️ Settings</h2>
-  <label>Theme
-    <select id="globalTheme">
-      <option value="tech">Tech Lab</option>
-      <option value="arctic">Arctic Base</option>
-      <option value="sunset">Sunset Beach</option>
-      <option value="space">Space</option>
-    </select>
-  </label>
-  <label>Language
-    <select id="langSelect">
-      <option value="en">English</option>
-      <option value="es">Español</option>
-    </select>
-  </label>
-  <label>Sound
-    <select id="soundSelect">
-      <option value="soft">Soft Digital</option>
-      <option value="beep">Beep-Boop</option>
-      <option value="ping">Pure Ping</option>
-    </select>
-  </label>
-  <label>Volume <input id="globalVolume" type="range" min="0" max="100"></label>
-  <h3>Avatar</h3>
-  <div id="settingsAvatarPreview" class="penguin"></div>
-  <input id="settingsAvatarName" placeholder="Name">
-  <input id="settingsAvatarColor" type="color" value="#0ea5e9">
-  <select id="settingsAvatarHead">
-    <option value="">Head: none</option>
-    <option value="beanie">Beanie</option>
-    <option value="glasses">Glasses</option>
-  </select>
-  <select id="settingsAvatarBody">
-    <option value="">Body: none</option>
-    <option value="hoodie">Hoodie</option>
-  </select>
-  <select id="settingsAvatarEffect">
-    <option value="">Effect: none</option>
-    <option value="aura">Aura</option>
-  </select>
-</aside>
-
-<!-- CALCULATOR MODAL -->
-<div id="calcModal" class="modal">
-  <div id="calcBox" class="modal-content">
-    <h3>🧮 Calculator</h3>
-    <input id="calcDisplay" readonly>
-    <div id="calcButtons"></div>
+  <!-- Calculator Modal -->
+  <div id="calcModal" class="modal" aria-hidden="true">
+    <div class="modal-body calc">
+      <div class="modal-head">
+        <div class="title">🧮 Calculator</div>
+        <button class="icon-btn" id="closeCalc">✖</button>
+      </div>
+      <input id="calcDisplay" readonly />
+      <div id="calcKeys" class="calc-grid"></div>
+    </div>
   </div>
-</div>
 
-<!-- SEARCH MODAL -->
-<div id="searchModal" class="modal">
-  <div class="modal-content">
-    <h3>🔎 Quick Search</h3>
-    <input id="searchQuery" placeholder="Type term...">
-    <iframe id="searchFrame" src=""></iframe>
+  <!-- Search Modal -->
+  <div id="searchModal" class="modal" aria-hidden="true">
+    <div class="modal-body">
+      <div class="modal-head">
+        <div class="title">🔎 Quick Search</div>
+        <button class="icon-btn" id="closeSearch">✖</button>
+      </div>
+      <input id="searchQuery" placeholder="Type a definition / concept…" />
+      <iframe id="searchFrame" title="Embedded search"></iframe>
+    </div>
   </div>
-</div>
 
-<script src="script.js"></script>
+  <!-- Call Overlay (floating / fullscreen) -->
+  <div id="callOverlay" class="call hidden" aria-live="polite">
+    <div class="call-head">
+      <div class="title">📞 Penguin Call — <span id="callMode">Study</span></div>
+      <div class="call-actions">
+        <button id="toggleMute" class="icon-btn" title="Toggle ambient">🔇</button>
+        <button id="toggleSize" class="icon-btn" title="Toggle fullscreen">⤢</button>
+        <button id="closeCall" class="icon-btn danger" title="Close">✖</button>
+      </div>
+    </div>
+    <div class="call-scene">
+      <div id="callPenguin" class="penguin3d big"></div>
+      <div id="callBackdrop" class="backdrop tech"></div>
+      <div id="pomoMicro" class="microtimer hidden">00:00</div>
+    </div>
+  </div>
+
+  <!-- Pomodoro Popup -->
+  <div id="pomoOverlay" class="pomo hidden" aria-live="polite">
+    <div class="pomo-head">
+      <div class="title">🍅 Focus: <span id="pomoTaskTitle">—</span></div>
+      <div class="pomo-actions">
+        <button id="pomoMin" class="icon-btn">▁</button>
+        <button id="pomoClose" class="icon-btn danger">✖</button>
+      </div>
+    </div>
+    <div class="pomo-body">
+      <div class="pomo-circle"><span id="pomoTime">25:00</span></div>
+      <div class="row center">
+        <button id="pomoStart" class="primary">Start</button>
+        <button id="pomoPause" class="ghost">Pause</button>
+        <button id="pomoDone" class="success">Done</button>
+        <button id="pomoExit" class="danger">Exit</button>
+      </div>
+      <small class="muted">Short break (5 min) runs automatically between Pomodoros; mini-games will appear during breaks in Race Mode.</small>
+    </div>
+  </div>
+
+  <!-- Audio (generated by JS) -->
+  <audio id="beepSoft" preload="auto"></audio>
+  <audio id="beepBeep" preload="auto"></audio>
+  <audio id="beepPing" preload="auto"></audio>
+
+  <script src="script.js"></script>
 </body>
 </html>
