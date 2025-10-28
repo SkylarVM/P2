@@ -1,297 +1,326 @@
-/**********************************************************************
- 🐧 Penguin Companion v4.0 — XP Planner
- Compatible with provided index.html & style.css
-**********************************************************************/
+/* ==============================================
+   Penguin Companion — script.js
+   ============================================== */
 
-// ---------- Utility ----------
-const $ = (s, all=false) => all ? document.querySelectorAll(s) : document.querySelector(s);
-const save = (k,v) => localStorage.setItem(k, JSON.stringify(v));
-const load = (k,d) => JSON.parse(localStorage.getItem(k) || JSON.stringify(d));
-
-// ---------- Global State ----------
-let state = load("penguin_state", {
-  xp: 0,
-  coins: 0,
-  level: 1,
-  theme: "tech",
-  sound: "soft",
-  lang: "en",
-  volume: 40,
-  avatar: { name:"Pingu", color:"#0ea5e9", head:"", body:"", effect:"" },
+// ============ GLOBAL DATA STRUCTURE ============
+const state = {
+  user: {
+    name: "Pingu",
+    color: "#7c3aed",
+    head: "none",
+    body: "none",
+    effect: "none",
+    xp: 0,
+    coins: 0,
+    level: 1,
+    theme: "tech",
+    lang: "en",
+    sound: "soft",
+    volume: 40
+  },
+  settings: {
+    focus: 25,
+    short: 5,
+    long: 15,
+    autoNext: false
+  },
   tasks: [],
   rewards: [],
-  history: [],
-  alarms: []
-});
+  alarms: [],
+  schedule: [],
+  shop: {
+    accessories: [
+      { id: "hat", name: "Hat", cost: 10, unlocked: false, icon: "🧢" },
+      { id: "bow", name: "Bow", cost: 8, unlocked: false, icon: "🎀" },
+      { id: "scarf", name: "Scarf", cost: 9, unlocked: false, icon: "🧣" },
+      { id: "glasses", name: "Glasses", cost: 12, unlocked: false, icon: "🕶️" },
+      { id: "headphones", name: "Headphones", cost: 15, unlocked: false, icon: "🎧" },
+      { id: "crown", name: "Crown", cost: 20, unlocked: false, icon: "👑" },
+      { id: "hoodie", name: "Hoodie", cost: 18, unlocked: false, icon: "🧥" },
+      { id: "suit", name: "Suit", cost: 25, unlocked: false, icon: "🤵" },
+      { id: "wizard", name: "Wizard Hat", cost: 22, unlocked: false, icon: "🪄" },
+      { id: "jetpack", name: "Jetpack", cost: 28, unlocked: false, icon: "🚀" }
+    ],
+    themes: [
+      { id: "tech", name: "Tech Lab", owned: true, cost: 0 },
+      { id: "arctic", name: "Arctic Base", owned: false, cost: 20 },
+      { id: "sunset", name: "Sunset Beach", owned: false, cost: 24 },
+      { id: "space", name: "Cosmic Orbit", owned: false, cost: 28 }
+    ],
+    effects: [
+      { id: "aura", name: "Aura", level: 12, unlocked: false },
+      { id: "rainbow", name: "Rainbow Aura", level: 16, unlocked: false },
+      { id: "frost", name: "Frost Aura", level: 18, unlocked: false },
+      { id: "spark", name: "Spark Effect", level: 20, unlocked: false }
+    ]
+  },
+  race: null,
+  pomo: { time: 0, mode: "focus", running: false, timer: null }
+};
 
-// ---------- UI Update ----------
-function updateHeader(){
-  $("#levelLine div").innerHTML =
-    `Level ${state.level} • XP ${state.xp.toFixed(2)} • Coins ${state.coins}`;
-  const pct = Math.min(100, (state.xp % 100));
-  $("#progressBar").style.width = pct + "%";
+// ============ STORAGE HANDLING ============
+function saveState() {
+  localStorage.setItem("penguinAppData", JSON.stringify(state));
 }
-updateHeader();
+function loadState() {
+  const saved = localStorage.getItem("penguinAppData");
+  if (saved) Object.assign(state, JSON.parse(saved));
+}
+loadState();
 
-// ---------- TASKS ----------
-$("#addTask").onclick = () => {
-  const name = $("#taskInput").value.trim();
-  const xp = parseFloat($("#taskXP").value) || 0;
-  if(!name) return;
-  const t = { id: crypto.randomUUID(), name, xp };
-  state.tasks.push(t);
-  save("penguin_state", state);
+// ============ UTILITY ============
+function $(sel) { return document.querySelector(sel); }
+function create(tag, cls) {
+  const el = document.createElement(tag);
+  if (cls) el.className = cls;
+  return el;
+}
+function randCode(len = 5) {
+  return Math.random().toString(36).substr(2, len).toUpperCase();
+}
+
+// ============ XP & LEVEL ============
+function updateXP(amount) {
+  state.user.xp += amount;
+  if (state.user.xp < 0) state.user.xp = 0;
+  const levelUp = Math.floor(state.user.xp / 100) + 1;
+  if (levelUp > state.user.level) {
+    state.user.level = levelUp;
+    state.user.coins += 10;
+  }
+  updateHeader();
+  saveState();
+}
+
+function updateHeader() {
+  $("#levelText").textContent = `Level ${state.user.level} • XP ${state.user.xp.toFixed(2)} • Coins ${state.user.coins}`;
+  $("#xpBar").style.width = `${(state.user.xp % 100)}%`;
+}
+
+// ============ TASKS ============
+function renderTasks() {
+  const list = $("#taskList");
+  list.innerHTML = "";
+  state.tasks.forEach((t, i) => {
+    const li = create("li");
+    li.innerHTML = `<span>${t.name} (${t.xp} XP, ${t.category})</span>
+      <div><button data-i="${i}" class="success small">Done</button>
+      <button data-i="${i}" class="danger small">✖</button></div>`;
+    list.appendChild(li);
+  });
+}
+$("#taskAdd").onclick = () => {
+  const name = $("#taskName").value.trim();
+  const cat = $("#taskCategory").value;
+  const xp = parseFloat($("#taskXP").value || "0");
+  if (!name) return;
+  state.tasks.push({ name, category: cat, xp });
+  saveState();
+  renderTasks();
+  $("#taskName").value = "";
+};
+$("#taskList").onclick = e => {
+  if (e.target.classList.contains("success")) {
+    const i = e.target.dataset.i;
+    updateXP(state.tasks[i].xp);
+    state.tasks.splice(i, 1);
+  } else if (e.target.classList.contains("danger")) {
+    state.tasks.splice(e.target.dataset.i, 1);
+  }
+  saveState();
   renderTasks();
 };
-function renderTasks(){
-  const ul = $("#taskList"); ul.innerHTML="";
-  state.tasks.forEach(t=>{
-    const li=document.createElement("li");
-    li.innerHTML = `<span>${t.name} (${t.xp} XP)</span>
-    <div>
-      <button class="doneBtn">✔️</button>
-      <button class="delBtn">🗑️</button>
-    </div>`;
-    li.querySelector(".doneBtn").onclick=()=>completeTask(t.id);
-    li.querySelector(".delBtn").onclick=()=>{ state.tasks=state.tasks.filter(x=>x.id!==t.id); save("penguin_state",state); renderTasks(); };
-    ul.appendChild(li);
-  });
-}
-function completeTask(id){
-  const t = state.tasks.find(x=>x.id===id);
-  if(!t) return;
-  state.xp += t.xp;
-  state.history.push({ name:t.name, xp:t.xp, date:new Date().toLocaleDateString() });
-  state.tasks = state.tasks.filter(x=>x.id!==id);
-  if(state.xp>=state.level*100){ state.level++; state.coins+=5; }
-  save("penguin_state", state);
-  updateHeader(); renderTasks(); renderHistory();
-}
 renderTasks();
 
-// ---------- REWARDS ----------
-$("#addReward").onclick = () => {
-  const name = $("#rewardInput").value.trim();
-  const cost = parseFloat($("#rewardCost").value)||0;
-  if(!name) return;
-  const r = { id:crypto.randomUUID(), name, cost };
-  state.rewards.push(r); save("penguin_state",state); renderRewards();
-};
-function renderRewards(){
-  const ul=$("#rewardList"); ul.innerHTML="";
-  state.rewards.forEach(r=>{
-    const li=document.createElement("li");
-    li.innerHTML=`<span>${r.name} (${r.cost} XP)</span>
-    <div>
-      <button class="buyBtn">Buy</button>
-      <button class="delBtn">🗑️</button>
-    </div>`;
-    li.querySelector(".buyBtn").onclick=()=>buyReward(r.id);
-    li.querySelector(".delBtn").onclick=()=>{state.rewards=state.rewards.filter(x=>x.id!==r.id);save("penguin_state",state);renderRewards();};
-    ul.appendChild(li);
+// ============ REWARDS ============
+function renderRewards() {
+  const list = $("#rewardList");
+  list.innerHTML = "";
+  state.rewards.forEach((r, i) => {
+    const li = create("li");
+    li.innerHTML = `<span>${r.name} (${r.cost} XP)</span>
+      <div><button data-i="${i}" class="primary small">Buy</button>
+      <button data-i="${i}" class="danger small">✖</button></div>`;
+    list.appendChild(li);
   });
 }
-function buyReward(id){
-  const r=state.rewards.find(x=>x.id===id);
-  if(!r) return;
-  if(state.xp<r.cost){ alert("Not enough XP!"); return; }
-  state.xp-=r.cost;
-  alert(`Enjoy your reward: ${r.name}!`);
-  save("penguin_state",state); updateHeader();
-}
+$("#rewardAdd").onclick = () => {
+  const name = $("#rewardName").value.trim();
+  const cost = parseFloat($("#rewardCost").value || "0");
+  if (!name) return;
+  state.rewards.push({ name, cost });
+  saveState();
+  renderRewards();
+};
+$("#rewardList").onclick = e => {
+  const i = e.target.dataset.i;
+  if (e.target.classList.contains("primary")) {
+    if (state.user.xp >= state.rewards[i].cost) {
+      state.user.xp -= state.rewards[i].cost;
+      alert("Reward claimed!");
+    } else alert("Not enough XP!");
+  } else if (e.target.classList.contains("danger")) {
+    state.rewards.splice(i, 1);
+  }
+  saveState();
+  renderRewards();
+  updateHeader();
+};
 renderRewards();
 
-// ---------- HISTORY ----------
-function renderHistory(){
-  const d = new Date().toLocaleDateString();
-  const list = state.history.filter(h=>h.date===d);
-  $("#historyList").innerHTML = list.length ? list.map(h=>`<div>${h.name} +${h.xp} XP</div>`).join("") : "<i>No tasks yet.</i>";
+// ============ STATS ============
+function updateStats() {
+  const total = state.tasks.length ? state.tasks.length : 1;
+  const cats = { Study: 0, Work: 0, "Self-Care": 0, Other: 0 };
+  state.tasks.forEach(t => cats[t.category]++);
+  for (let c in cats) {
+    const pct = (cats[c] / total) * 100;
+    const bar = $("#bar" + c.replace("-", ""));
+    const label = $("#pct" + (c.split("-")[0] || c));
+    if (bar && label) {
+      bar.style.width = pct + "%";
+      label.textContent = pct.toFixed(0) + "%";
+    }
+  }
 }
-renderHistory();
+setInterval(updateStats, 3000);
 
-// ---------- AVATAR ----------
-function applyPenguin(el){
-  if(!el) return;
-  const a = state.avatar;
-  el.style.setProperty("--p", a.color);
-  el.innerHTML = `<div class="body"></div>
-    <div class="eye left"></div><div class="eye right"></div><div class="beak"></div>`;
-}
-function renderAvatar(){
-  applyPenguin($("#penguinPreview"));
-  $("#avatarNameDisplay").textContent = `Hi, I'm ${state.avatar.name}!`;
-  $("#avatarName").value = state.avatar.name;
-  $("#avatarColor").value = state.avatar.color;
-  $("#avatarHead").value = state.avatar.head;
-  $("#avatarBody").value = state.avatar.body;
-  $("#avatarEffect").value = state.avatar.effect;
-}
-renderAvatar();
-
-$("#saveAvatar").onclick = () => {
-  state.avatar.name = $("#avatarName").value || "Pingu";
-  state.avatar.color = $("#avatarColor").value;
-  state.avatar.head = $("#avatarHead").value;
-  state.avatar.body = $("#avatarBody").value;
-  state.avatar.effect = $("#avatarEffect").value;
-  save("penguin_state",state);
-  renderAvatar();
-};
-
-// ---------- SHOP ----------
-const shopItems = [
-  {id:"beanie", name:"Beanie", type:"head", cost:10, level:1},
-  {id:"glasses", name:"Glasses", type:"head", cost:15, level:3},
-  {id:"cap", name:"Cap", type:"head", cost:20, level:6},
-  {id:"hoodie", name:"Hoodie", type:"body", cost:25, level:4},
-  {id:"cape", name:"Cape", type:"body", cost:30, level:7},
-  {id:"aura", name:"Frost Aura", type:"effect", cost:35, level:10},
-  {id:"theme-tech", name:"Theme: Tech Lab", type:"theme", cost:0, level:1},
-  {id:"theme-sunset", name:"Theme: Sunset Beach", type:"theme", cost:20, level:5},
-  {id:"theme-space", name:"Theme: Space", type:"theme", cost:25, level:8},
-  {id:"theme-arctic", name:"Theme: Arctic Base", type:"theme", cost:20, level:4}
-];
-
-function renderShop(){
-  const grid=$("#shopGrid"); grid.innerHTML="";
-  shopItems.forEach(it=>{
-    const owned = state[it.type+"Owned"]?.includes(it.id);
-    const locked = state.level<it.level;
-    const div=document.createElement("div");
-    div.className="shop-item"+(locked?" locked":"");
-    div.innerHTML=`<div><b>${it.name}</b><br>Cost:${it.cost}</div>`;
-    const btn=document.createElement("button");
-    btn.textContent=owned?"Owned":"Buy";
-    btn.disabled=locked || owned;
-    btn.onclick=()=>buyItem(it);
-    div.appendChild(btn); grid.appendChild(div);
+// ============ SCHEDULE ============
+function renderSchedule() {
+  const grid = $("#scheduleGrid");
+  grid.innerHTML = "";
+  state.schedule.forEach((b, i) => {
+    const el = create("div", "schedule-block");
+    el.style.background = b.color;
+    el.style.top = b.start + "px";
+    el.style.height = b.end - b.start + "px";
+    el.textContent = b.title;
+    el.onclick = () => {
+      if (confirm("Delete block?")) {
+        state.schedule.splice(i, 1);
+        renderSchedule();
+        saveState();
+      }
+    };
+    grid.appendChild(el);
   });
 }
-function buyItem(it){
-  if(state.coins<it.cost){ alert("Not enough coins!"); return; }
-  state.coins-=it.cost;
-  if(!state[it.type+"Owned"]) state[it.type+"Owned"]=[];
-  state[it.type+"Owned"].push(it.id);
-  if(it.type==="theme"){ state.theme = it.id.replace("theme-",""); }
-  save("penguin_state",state); renderShop(); updateHeader();
+$("#addBlock").onclick = () => {
+  const title = $("#blockTitle").value.trim();
+  const s = $("#blockStart").value;
+  const e = $("#blockEnd").value;
+  const color = $("#blockColor").value;
+  if (!title || !s || !e) return;
+  const start = parseInt(s.split(":")[0]) * 60 + parseInt(s.split(":")[1]);
+  const end = parseInt(e.split(":")[0]) * 60 + parseInt(e.split(":")[1]);
+  state.schedule.push({ title, start, end, color });
+  saveState();
+  renderSchedule();
+};
+$("#clearSchedule").onclick = () => {
+  if (confirm("Clear all blocks?")) {
+    state.schedule = [];
+    renderSchedule();
+    saveState();
+  }
+};
+renderSchedule();
+
+// ============ ALARMS ============
+function renderAlarms() {
+  const list = $("#alarmList");
+  list.innerHTML = "";
+  state.alarms.forEach((a, i) => {
+    const li = create("li");
+    li.innerHTML = `<span>${a.time} - ${a.label}</span>
+      <div><button data-i="${i}" class="danger small">✖</button></div>`;
+    list.appendChild(li);
+  });
+}
+$("#addAlarm").onclick = () => {
+  const time = $("#alarmTime").value;
+  const label = $("#alarmLabel").value || "Alarm";
+  const sound = $("#alarmSound").value;
+  state.alarms.push({ time, label, sound });
+  saveState();
+  renderAlarms();
+};
+$("#alarmList").onclick = e => {
+  if (e.target.classList.contains("danger")) {
+    state.alarms.splice(e.target.dataset.i, 1);
+    renderAlarms();
+    saveState();
+  }
+};
+setInterval(() => {
+  const now = new Date();
+  const hh = String(now.getHours()).padStart(2, "0");
+  const mm = String(now.getMinutes()).padStart(2, "0");
+  state.alarms.forEach(a => {
+    if (`${hh}:${mm}` === a.time) {
+      playSound(a.sound);
+      alert("🐧 Alarm: " + a.label);
+    }
+  });
+}, 60000);
+renderAlarms();
+
+// ============ SHOP ============
+function renderShop() {
+  const aGrid = $("#shopAccessories");
+  const tGrid = $("#shopThemes");
+  const eGrid = $("#shopEffects");
+  aGrid.innerHTML = ""; tGrid.innerHTML = ""; eGrid.innerHTML = "";
+  let ownedCount = 0;
+
+  state.shop.accessories.forEach(item => {
+    const div = create("div", "shop-item" + (item.unlocked ? "" : " locked"));
+    div.innerHTML = `<div class="badge">${item.icon}</div><div>${item.name}</div>
+      <div class="cost">${item.cost} coins</div>`;
+    div.onclick = () => buyItem(item, "accessories");
+    aGrid.appendChild(div);
+    if (item.unlocked) ownedCount++;
+  });
+  state.shop.themes.forEach(item => {
+    const div = create("div", "shop-item" + (item.owned ? "" : " locked"));
+    div.innerHTML = `<div>${item.name}</div><div class="cost">${item.cost} coins</div>`;
+    div.onclick = () => buyItem(item, "themes");
+    tGrid.appendChild(div);
+    if (item.owned) ownedCount++;
+  });
+  state.shop.effects.forEach(item => {
+    const div = create("div", "shop-item" + (item.unlocked ? "" : " locked"));
+    div.innerHTML = `<div>${item.name}</div><div class="cost">Lvl ${item.level}</div>`;
+    eGrid.appendChild(div);
+    if (item.unlocked) ownedCount++;
+  });
+  $("#coinsText").textContent = state.user.coins;
+  $("#ownedCount").textContent = ownedCount;
+}
+function buyItem(item, type) {
+  if (item.unlocked || item.owned) return;
+  if (type === "effects") {
+    if (state.user.level >= item.level) item.unlocked = true;
+    else return alert("Reach level " + item.level + " to unlock this!");
+  } else {
+    if (state.user.coins >= item.cost) {
+      state.user.coins -= item.cost;
+      item.unlocked = item.owned = true;
+    } else return alert("Not enough coins!");
+  }
+  saveState();
+  renderShop();
+  updateHeader();
 }
 renderShop();
 
-// ---------- SETTINGS SIDEBAR ----------
-$("#settingsBtn").onclick=()=>$("#settingsPanel").classList.toggle("show");
-
-// ---------- CALCULATOR ----------
-$("#openCalcBtn").onclick = ()=>$("#calcModal").classList.add("show");
-$("#calcModal").onclick = e=>{ if(e.target.id==="calcModal") $("#calcModal").classList.remove("show"); };
-const calcDisplay=$("#calcDisplay");
-const calcButtons=$("#calcButtons");
-"789/456*123-0.=+".split("").forEach(c=>{
-  const b=document.createElement("button");
-  b.textContent=c;
-  b.onclick=()=>{ if(c==="=") calcDisplay.value=eval(calcDisplay.value||"0");
-    else calcDisplay.value+=c; };
-  calcButtons.appendChild(b);
-});
-
-// ---------- SEARCH ----------
-$("#openSearchBtn").onclick=()=>$("#searchModal").classList.add("show");
-$("#searchModal").onclick=e=>{ if(e.target.id==="searchModal") e.target.classList.remove("show"); };
-$("#searchQuery").onchange=e=>{
-  const q=encodeURIComponent(e.target.value);
-  $("#searchFrame").src=`https://www.google.com/search?q=${q}`;
-};
-
-// ---------- EXPORT / IMPORT ----------
-$("#exportBtn").onclick=()=>{
-  const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});
-  const a=document.createElement("a");
-  a.href=URL.createObjectURL(blob);
-  a.download="penguin_data.json";
-  a.click();
-};
-$("#exportCsvBtn").onclick=()=>{
-  let csv="type,name,xp\n";
-  state.history.forEach(h=>{csv+=`task,${h.name},${h.xp}\n`;});
-  const blob=new Blob([csv],{type:"text/csv"});
-  const a=document.createElement("a");
-  a.href=URL.createObjectURL(blob);
-  a.download="penguin_data.csv";
-  a.click();
-};
-$("#importBtn").onclick=()=>$("#importFile").click();
-$("#importFile").onchange=e=>{
-  const f=e.target.files[0]; if(!f) return;
-  const r=new FileReader();
-  r.onload=()=>{ try{state=JSON.parse(r.result); save("penguin_state",state); location.reload();}catch{alert("Invalid file");}};
-  r.readAsText(f);
-};
-
-// ---------- ALARMS ----------
-$("#addAlarmBtn").onclick=()=>{
-  const time=prompt("Enter alarm time (HH:MM 24h)");
-  if(!time) return;
-  state.alarms.push({id:crypto.randomUUID(),time,active:true});
-  save("penguin_state",state);
-  alert("Alarm set!");
-};
-setInterval(()=>{
-  const now=new Date(); const h=String(now.getHours()).padStart(2,"0"), m=String(now.getMinutes()).padStart(2,"0");
-  state.alarms.forEach(a=>{
-    if(a.active && a.time===`${h}:${m}`){ alert("⏰ Alarm!"); a.active=false; save("penguin_state",state); }
-  });
-},60000);
-
-// ---------- THEME ----------
-function applyTheme(){
-  const t=state.theme;
-  document.body.style.background = 
-    t==="tech" ? "#0b1220 radial-gradient(circle at top left,rgba(59,130,246,.2),transparent)" :
-    t==="sunset" ? "linear-gradient(180deg,#f97316,#9333ea)" :
-    t==="space" ? "linear-gradient(180deg,#0f172a,#1e3a8a)" :
-    t==="arctic" ? "linear-gradient(180deg,#e0f2fe,#bae6fd)" :
-    "#0b1220";
-}
-applyTheme();
-
-// ---------- RACE MODE (offline multiplayer) ----------
-(function raceMode(){
-  const section = $("#raceSection");
-  section.innerHTML = `
-    <h2>🏁 Race Mode</h2>
-    <div class="row"><button id="createRace">Create</button><input id="joinCode"><button id="joinRace">Join</button></div>
-    <div id="raceStatus"></div>
-    <ul id="raceBoard"></ul>
-  `;
-  const ch = new BroadcastChannel("penguin-race");
-  let code=null, isHost=false, timer=null, sec=0, members={};
-
-  $("#createRace").onclick=()=>{
-    code=Math.random().toString(36).slice(2,6).toUpperCase();
-    isHost=true; members[state.avatar.name]={xp:0};
-    $("#raceStatus").textContent=`Room ${code} created`;
-  };
-  $("#joinRace").onclick=()=>{
-    code=$("#joinCode").value.toUpperCase();
-    ch.postMessage({t:"join",code,name:state.avatar.name});
-  };
-
-  ch.onmessage=(e)=>{
-    const msg=e.data;
-    if(msg.t==="join" && isHost && msg.code===code){
-      members[msg.name]={xp:0};
-      ch.postMessage({t:"update",code,members});
-      renderBoard();
-    }
-    if(msg.t==="update" && msg.code===code){ members=msg.members; renderBoard(); }
-  };
-  function renderBoard(){
-    const ul=$("#raceBoard"); ul.innerHTML="";
-    Object.entries(members).forEach(([n,v])=>{
-      const li=document.createElement("li");
-      li.textContent=`${n}: ${v.xp.toFixed(2)} XP`;
-      ul.appendChild(li);
-    });
-  }
-})();
-
-console.log("🐧 Penguin Companion v4 loaded successfully.");
+// ============ AVATAR ============
+function renderAvatar(target = "#settingsAvatarPreview") {
+  const container = $(target);
+  container.innerHTML = "";
+  const base = create("div", "penguin3d");
+  base.style.setProperty("--body", state.user.color);
+  const leftEye = create("div", "eye left");
+  const rightEye = create("div", "eye right");
+  const beak = create("div", "beak");
+  base.append(left
