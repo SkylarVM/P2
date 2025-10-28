@@ -1,403 +1,176 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>🐧 Penguin Companion — XP Planner</title>
-  <link rel="stylesheet" href="style.css"/>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🐧 Penguin Companion — XP Planner</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <!-- Header -->
-  <header class="header">
-    <div class="brand">
-      <span class="brand-emoji">🐧</span>
-      <h1>Penguin Companion — XP Planner</h1>
-    </div>
-    <div class="stats">
-      <span>Level <b id="level">1</b></span>
-      <span>• XP <b id="exp">0.00</b></span>
-      <span>• Coins <b id="coins">0</b></span>
-    </div>
-    <button id="openSettings" class="icon-btn" title="Settings">⚙️</button>
-  </header>
-  <div class="progress"><div id="xpBar"></div></div>
 
-  <main class="grid">
-    <!-- Tasks -->
-    <section class="card">
-      <h2>✅ Tasks</h2>
-      <div class="row">
-        <input id="taskName" placeholder="Task"/>
-        <input id="taskXP" type="number" step="0.01" min="0.01" placeholder="XP"/>
-        <select id="taskCat"></select>
-        <button id="addTask">Add</button>
-      </div>
-      <div class="row"><button id="addCat" class="ghost">+ Category</button></div>
-      <ul id="taskList" class="list"></ul>
-    </section>
-
-    <!-- Rewards -->
-    <section class="card">
-      <h2>🎁 Rewards</h2>
-      <div class="row">
-        <input id="rewardName" placeholder="Reward"/>
-        <input id="rewardCost" type="number" step="0.01" min="0.01" placeholder="Cost"/>
-        <button id="addReward">Add</button>
-      </div>
-      <ul id="rewardList" class="list"></ul>
-    </section>
-
-    <!-- Stats -->
-    <section class="card">
-      <h2>📊 Category Stats</h2>
-      <div id="statsChart"></div>
-    </section>
-
-    <!-- Planner -->
-    <section class="card wide">
-      <h2>📆 Time-Blocking (15-min)</h2>
-      <div class="row">
-        <input id="schedTitle" placeholder="Block title"/>
-        <input id="schedStart" type="time" step="900" value="08:00"/>
-        <input id="schedEnd" type="time" step="900" value="09:00"/>
-        <input id="schedColor" type="color" value="#60a5fa"/>
-        <button id="addBlock">Add</button>
-      </div>
-      <div class="row">
-        <button id="addFromTasks">📋 Add from Tasks</button>
-        <button id="clearSchedule" class="ghost">🧹 Clear Schedule</button>
-        <button id="clearToday" class="ghost">🗑 Clear Today’s History</button>
-      </div>
-      <div id="scheduleWrap">
-        <div id="timeline">
-          <div id="timeLabels"></div>
-          <div id="eventLayer"></div>
-          <div id="nowMarker"></div>
-          <div id="nowPenguin">🐧</div>
-        </div>
-      </div>
-      <p class="muted">Click a block to edit.</p>
-    </section>
-
-    <!-- Avatar -->
-    <section class="card">
-      <h2>🐧 My Penguin</h2>
-      <div class="row center">
-        <div id="avatarPreview" class="penguin">
-          <div class="body"></div><div class="wing l"></div><div class="wing r"></div>
-          <div class="eye l"></div><div class="eye r"></div><div class="beak"></div>
-        </div>
-        <div>Hi, I’m <b id="avatarName">Pingu</b>!</div>
-      </div>
-      <div class="row"><input id="avatarInputName" placeholder="Name (e.g., Penny)"/></div>
-      <div class="row">
-        <button class="chip" data-color="#0ea5e9">Blue</button>
-        <button class="chip" data-color="#ef4444">Red</button>
-        <button class="chip" data-color="#22c55e">Green</button>
-        <button class="chip" data-color="#a855f7">Purple</button>
-        <button class="chip" data-color="#f59e0b">Gold</button>
-      </div>
-      <div class="row">
-        <select id="equipHead">
-          <option value="">Head: none</option>
-          <option value="cap">Cap</option><option value="crown">Crown</option>
-          <option value="grad">Grad Hat</option><option value="headphones">Headphones</option><option value="glasses">Glasses</option>
-        </select>
-        <select id="equipBody">
-          <option value="">Body: none</option>
-          <option value="scarf">Scarf</option><option value="bow">Bow</option>
-          <option value="cape">Cape</option><option value="mittens">Mittens</option>
-        </select>
-        <select id="equipEffect">
-          <option value="">Effect: none</option>
-          <option value="aura">Aura</option><option value="rainbow">Rainbow Aura</option><option value="frost">Frost Aura</option>
-        </select>
-      </div>
-      <div class="row"><button id="saveAvatar">Save Avatar</button></div>
-    </section>
-
-    <!-- Shop -->
-    <section class="card wide">
-      <h2>🛍️ Penguin Shop</h2>
-      <div id="shopGrid" class="shop"></div>
-    </section>
-
-    <!-- Pomodoro & Calls -->
-    <section class="card">
-      <h2>⏱️ Pomodoro & 📞 Calls</h2>
-      <div class="row wrap">
-        <label>Focus <input id="focusInput" type="number" min="1" value="25"/></label>
-        <label>Short <input id="breakInput" type="number" min="1" value="5"/></label>
-        <label>Long <input id="longBreakInput" type="number" min="1" value="15"/></label>
-        <button id="savePomo">Save</button>
-      </div>
-      <div class="row wrap">
-        <button id="callChill">🎥 Call Penguin</button>
-        <button class="ghost" data-call="Study">Study</button>
-        <button class="ghost" data-call="Exercise">Exercise</button>
-        <button class="ghost" data-call="Eat">Eat</button>
-        <button class="ghost" data-call="Bath">Bath</button>
-        <button class="ghost" data-call="Sleep">Sleep</button>
-        <button class="ghost" id="openPomo">🍅 Open Pomodoro</button>
-        <button class="ghost" id="shareMeet">🔗 Share call (Meet)</button>
-      </div>
-      <p class="muted">Ambient Lab hum is muted by default. Toggle in overlays.</p>
-    </section>
-
-    <!-- Tools -->
-    <section class="card">
-      <h2>🧮 & 🔍 Tools</h2>
-      <div class="row between">
-        <button id="openCalcBtn">Open Calculator</button>
-        <button id="openSearchBtn">Open Quick Search</button>
-      </div>
-    </section>
-
-    <!-- Alarms -->
-    <section class="card">
-      <h2>⏰ Alarms</h2>
-      <div class="row">
-        <input id="alarmTime" type="time" step="60" value="08:00"/>
-        <input id="alarmLabel" placeholder="Label"/>
-        <select id="alarmTone">
-          <option value="soft">Soft Digital</option>
-          <option value="beep">Beep-Boop</option>
-          <option value="ping">Pure Ping</option>
-        </select>
-        <button id="addAlarm">Add</button>
-      </div>
-      <ul id="alarmList" class="list"></ul>
-    </section>
-
-    <!-- History -->
-    <section class="card wide">
-      <h2>📅 History (Today)</h2>
-      <div id="historySummary" class="muted">Total: 0 Pomodoros • 0 XP earned</div>
-      <ul id="historyList" class="list"></ul>
-    </section>
-
-    <!-- Export/Import -->
-    <section class="card wide">
-      <h2>💾 Data — Export / Import</h2>
-      <div class="row wrap">
-        <button id="exportJSON">Export JSON</button>
-        <button id="exportCSV" class="ghost">Export CSV</button>
-        <input id="importFile" type="file" accept=".json,.csv" hidden/>
-        <button id="importBtn">Import (JSON/CSV)</button>
-        <label class="muted"><input id="overwriteImport" type="checkbox"/> Overwrite instead of merge</label>
-      </div>
-    </section>
-
-    <!-- Race Mode -->
-    <section class="card wide">
-      <h2>🏁 Race Mode (Multiplayer Pomodoro)</h2>
-      <div class="row wrap">
-        <button id="raceCreate">Create Race</button>
-        <input id="raceCodeJoin" placeholder="Enter code…"/>
-        <button id="raceJoin">Join Race</button>
-        <span id="raceCodeShow" class="badge"></span>
-      </div>
-      <div id="raceArea" class="race-area">
-        <div class="row wrap">
-          <button id="raceStartPomo">Start Shared Pomodoro</button>
-          <button id="raceLeave" class="ghost">Leave</button>
-        </div>
-        <div class="row">
-          <select id="raceMyTask"></select>
-          <button id="raceMarkDone">Mark my task done</button>
-        </div>
-        <div id="raceTimer" class="race-timer">--:--</div>
-        <div id="raceBoard" class="race-board"></div>
-        <div id="racePodium" class="podium hidden"></div>
-      </div>
-    </section>
-  </main>
-
-  <!-- Edit Block Modal -->
-  <div id="editModal" class="modal">
-    <div class="box">
-      <h3>Edit Block</h3>
-      <input id="mTitle" placeholder="Title"/>
-      <div class="row">
-        <label>Start <input id="mStart" type="time" step="900"/></label>
-        <label>End <input id="mEnd" type="time" step="900"/></label>
-      </div>
-      <label>Color <input id="mColor" type="color"/></label>
-      <div class="row">
-        <button id="mSave">Save</button>
-        <button id="mDelete" class="danger">Delete</button>
-        <button id="mCancel" class="ghost">Cancel</button>
-      </div>
-    </div>
+<header>
+  <h1>🐧 Penguin Companion — XP Planner</h1>
+  <div id="levelLine">
+    <div>Level 1 • XP 0 • Coins 0</div>
+    <div id="progressContainer"><div id="progressBar"></div></div>
   </div>
+  <button id="settingsBtn">⚙️</button>
+</header>
 
-  <!-- Pomodoro Overlay -->
-  <div id="pomoOverlay" class="overlay">
-    <div class="panel">
-      <div class="panel-head">
-        <div id="pomoTitle">🍅 Pomodoro</div>
-        <div class="row">
-          <label class="muted">🔊 Ambient <input id="ambientToggle" type="checkbox"/></label>
-          <input id="ambientVol" type="range" min="0" max="100" value="40"/>
-          <button id="pomoClose" class="ghost">✖ Close</button>
-        </div>
-      </div>
-      <div id="scenePomo" class="scene"></div>
-      <div id="pomoPhase" class="muted">Focus</div>
-      <div id="focusCircle" class="ball"></div>
-      <div id="breakCircle" class="ball hide"></div>
-      <div id="pomoTimer" class="big">25:00</div>
-      <div class="row">
-        <button id="pomoPause" class="warn">⏸️ Pause</button>
-        <button id="pomoDone" class="ok">✅ Done</button>
-        <button id="pomoExit" class="danger">❌ Exit</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Calls Overlay / Floating -->
-  <div id="callOverlay" class="overlay">
-    <div class="panel">
-      <div class="panel-head">
-        <div id="callTitle">📞 Penguin Call</div>
-        <div class="row">
-          <label class="muted">🔊 Ambient <input id="callAmbToggle" type="checkbox"/></label>
-          <input id="callAmbVol" type="range" min="0" max="100" value="40"/>
-          <button id="callMin" class="ghost">➖ Minimize</button>
-          <button id="callClose" class="ghost">✖ Close</button>
-        </div>
-      </div>
-      <div id="sceneCall" class="scene"></div>
-      <div id="callTiny" class="muted hide">Pomodoro: --:-- left</div>
-    </div>
-  </div>
-
-  <div id="callFloat" class="call-float">
-    <div class="float-head">
-      <span>📞 Penguin Call</span>
-      <div>
-        <button id="floatRestore" class="ghost">⛶</button>
-        <button id="floatClose" class="ghost">✖</button>
-      </div>
-    </div>
-    <div class="float-body">
-      <div id="floatPenguin" class="penguin small">
-        <div class="body"></div><div class="wing l"></div><div class="wing r"></div>
-        <div class="eye l"></div><div class="eye r"></div><div class="beak"></div>
-      </div>
-      <div id="floatCaption" class="muted">Chilling…</div>
-      <div id="floatTiny" class="muted hide">Pomodoro: --:-- left</div>
-    </div>
-  </div>
-
-  <!-- Calculator Modal -->
-  <div id="calcModal" class="modal">
-    <div class="box">
-      <h3>Calculator</h3>
-      <input id="calcDisplay" readonly/>
-      <div id="calcGrid" class="calc-grid"></div>
-      <div class="row"><button id="calcClose" class="ghost">Close</button></div>
-    </div>
-  </div>
-
-  <!-- Search Modal -->
-  <div id="searchModal" class="modal">
-    <div class="box large">
-      <h3>Quick Search</h3>
-      <div class="row">
-        <input id="searchInput" placeholder="Search definitions…"/>
-        <button id="searchGo">Search</button>
-      </div>
-      <iframe id="searchFrame" title="Search"></iframe>
-      <div class="row"><button id="searchClose" class="ghost">Close</button></div>
-    </div>
-  </div>
-
-  <!-- Alarm Popup -->
-  <div id="alarmPopup" class="modal">
-    <div class="box">
-      <h3>⏰ Alarm</h3>
-      <div id="alarmMsg">Time!</div>
-      <div class="row">
-        <button id="alarmSnooze">Snooze 5 min</button>
-        <button id="alarmOk" class="ok">OK</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Settings (sidebar) -->
-  <aside id="settings" class="settings">
-    <div class="settings-head">
-      <h3>⚙️ Settings</h3>
-      <button id="closeSettings" class="ghost">✖</button>
-    </div>
-    <div class="muted">Saved automatically</div>
-    <hr/>
-    <div class="set">
-      <label>Theme</label>
-      <select id="setTheme">
-        <option value="tech">💻 Tech Lab</option>
-        <option value="arctic">❄️ Arctic Base</option>
-        <option value="sunset">🌅 Sunset Beach</option>
-        <option value="space">🌌 Space Nebula</option>
-      </select>
-    </div>
-    <div class="set">
-      <label>Language</label>
-      <select id="setLang">
-        <option value="en">English</option>
-        <option value="es">Español</option>
-      </select>
-    </div>
-    <div class="set">
-      <label>Default Alarm/Pomodoro Sound</label>
-      <select id="setSound">
-        <option value="soft">Soft Digital</option>
-        <option value="beep">Beep-Boop</option>
-        <option value="ping">Pure Ping</option>
-      </select>
-    </div>
-    <div class="set">
-      <label>Global Volume</label>
-      <input id="setVol" type="range" min="0" max="100" value="40"/>
-    </div>
-    <hr/>
-    <h4>Avatar</h4>
-    <div class="avatar-row">
-      <div id="settingsAvatar" class="penguin">
-        <div class="body"></div><div class="wing l"></div><div class="wing r"></div>
-        <div class="eye l"></div><div class="eye r"></div><div class="beak"></div>
-      </div>
-      <div class="stack">
-        <input id="sName" placeholder="Name"/>
-        <div class="row">
-          <input id="sColor" type="color" value="#0ea5e9"/>
-          <select id="sHead">
-            <option value="">Head: none</option>
-            <option value="cap">Cap</option><option value="crown">Crown</option><option value="grad">Grad Hat</option><option value="headphones">Headphones</option><option value="glasses">Glasses</option>
-          </select>
-        </div>
-        <div class="row">
-          <select id="sBody">
-            <option value="">Body: none</option>
-            <option value="scarf">Scarf</option><option value="bow">Bow</option><option value="cape">Cape</option><option value="mittens">Mittens</option>
-          </select>
-          <select id="sEffect">
-            <option value="">Effect: none</option>
-            <option value="aura">Aura</option><option value="rainbow">Rainbow Aura</option><option value="frost">Frost Aura</option>
-          </select>
-        </div>
-        <button id="sSave">Save avatar</button>
-      </div>
-    </div>
-    <hr/>
+<main class="container">
+  <!-- TASKS -->
+  <section class="card">
+    <h2>✅ Tasks</h2>
     <div class="row">
-      <button id="recalcEconomy" class="ghost">🪙 Recalculate XP/Coins</button>
-      <button id="resetTodayBtn" class="ghost">Reset Today</button>
-      <button id="clearAllBtn" class="danger">Clear All</button>
+      <input id="taskInput" placeholder="Task">
+      <input id="taskXP" placeholder="XP" type="number" step="0.25">
+      <button id="addTask">Add</button>
     </div>
-  </aside>
+    <ul id="taskList"></ul>
+  </section>
 
-  <script src="script.js"></script>
+  <!-- REWARDS -->
+  <section class="card">
+    <h2>🎁 Rewards</h2>
+    <div class="row">
+      <input id="rewardInput" placeholder="Reward">
+      <input id="rewardCost" placeholder="Cost" type="number" step="0.25">
+      <button id="addReward">Add</button>
+    </div>
+    <ul id="rewardList"></ul>
+  </section>
+
+  <!-- CATEGORY STATS -->
+  <section class="card">
+    <h2>📊 Category Stats</h2>
+    <div id="categoryStats">
+      <div class="stat"><span>Study</span><div class="bar"><div id="barStudy"></div></div></div>
+      <div class="stat"><span>Work</span><div class="bar"><div id="barWork"></div></div></div>
+      <div class="stat"><span>Self-Care</span><div class="bar"><div id="barSelf"></div></div></div>
+      <div class="stat"><span>Other</span><div class="bar"><div id="barOther"></div></div></div>
+    </div>
+  </section>
+
+  <!-- SHOP -->
+  <section class="card" id="shopCard">
+    <h2>🛍️ Penguin Shop</h2>
+    <div id="shopGrid"></div>
+  </section>
+
+  <!-- AVATAR -->
+  <section class="card" id="avatarCard">
+    <h2>🐧 My Penguin</h2>
+    <div id="penguinPreview" class="penguin"></div>
+    <div id="avatarNameDisplay">Hi, I’m Pingu!</div>
+    <div class="row">
+      <input id="avatarName" placeholder="Name (e.g., Penny)">
+      <input id="avatarColor" type="color" value="#0ea5e9">
+    </div>
+    <div class="row">
+      <select id="avatarHead">
+        <option value="">Head: none</option>
+        <option value="beanie">Beanie</option>
+        <option value="glasses">Glasses</option>
+        <option value="cap">Cap</option>
+      </select>
+      <select id="avatarBody">
+        <option value="">Body: none</option>
+        <option value="hoodie">Hoodie</option>
+        <option value="cape">Cape</option>
+      </select>
+    </div>
+    <select id="avatarEffect">
+      <option value="">Effect: none</option>
+      <option value="aura">Aura</option>
+    </select>
+    <button id="saveAvatar">Save Avatar</button>
+  </section>
+
+  <!-- TOOLS -->
+  <section class="card" id="toolsCard">
+    <h2>🧰 Tools</h2>
+    <button id="openCalcBtn">🧮 Calculator</button>
+    <button id="openSearchBtn">🔎 Quick Search</button>
+    <button id="addAlarmBtn">⏰ Add Alarm</button>
+    <button id="exportBtn">📤 Export JSON</button>
+    <button id="exportCsvBtn">📄 Export CSV</button>
+    <input id="importFile" type="file" style="display:none">
+    <button id="importBtn">📥 Import</button>
+  </section>
+
+  <!-- HISTORY -->
+  <section class="card" id="historyCard">
+    <h2>📅 History (Today)</h2>
+    <div id="historyList"></div>
+  </section>
+
+  <!-- RACE -->
+  <section class="card" id="raceSection"></section>
+
+</main>
+
+<!-- SETTINGS SIDEBAR -->
+<aside id="settingsPanel">
+  <h2>⚙️ Settings</h2>
+  <label>Theme
+    <select id="globalTheme">
+      <option value="tech">Tech Lab</option>
+      <option value="arctic">Arctic Base</option>
+      <option value="sunset">Sunset Beach</option>
+      <option value="space">Space</option>
+    </select>
+  </label>
+  <label>Language
+    <select id="langSelect">
+      <option value="en">English</option>
+      <option value="es">Español</option>
+    </select>
+  </label>
+  <label>Sound
+    <select id="soundSelect">
+      <option value="soft">Soft Digital</option>
+      <option value="beep">Beep-Boop</option>
+      <option value="ping">Pure Ping</option>
+    </select>
+  </label>
+  <label>Volume <input id="globalVolume" type="range" min="0" max="100"></label>
+  <h3>Avatar</h3>
+  <div id="settingsAvatarPreview" class="penguin"></div>
+  <input id="settingsAvatarName" placeholder="Name">
+  <input id="settingsAvatarColor" type="color" value="#0ea5e9">
+  <select id="settingsAvatarHead">
+    <option value="">Head: none</option>
+    <option value="beanie">Beanie</option>
+    <option value="glasses">Glasses</option>
+  </select>
+  <select id="settingsAvatarBody">
+    <option value="">Body: none</option>
+    <option value="hoodie">Hoodie</option>
+  </select>
+  <select id="settingsAvatarEffect">
+    <option value="">Effect: none</option>
+    <option value="aura">Aura</option>
+  </select>
+</aside>
+
+<!-- CALCULATOR MODAL -->
+<div id="calcModal" class="modal">
+  <div id="calcBox" class="modal-content">
+    <h3>🧮 Calculator</h3>
+    <input id="calcDisplay" readonly>
+    <div id="calcButtons"></div>
+  </div>
+</div>
+
+<!-- SEARCH MODAL -->
+<div id="searchModal" class="modal">
+  <div class="modal-content">
+    <h3>🔎 Quick Search</h3>
+    <input id="searchQuery" placeholder="Type term...">
+    <iframe id="searchFrame" src=""></iframe>
+  </div>
+</div>
+
+<script src="script.js"></script>
 </body>
 </html>
