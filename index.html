@@ -2,394 +2,286 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Penguin Companion — XP Planner</title>
-  <link rel="stylesheet" href="style.css"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>Penguin Companion — MVP</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-  <!-- ========== TOP BAR ========== -->
-  <header class="topbar">
-    <div class="brand">
-      <span aria-hidden="true">🐧</span>
-      <h1>Penguin Companion</h1>
-      <span id="welcomeUser" class="muted small" style="margin-left:8px;"></span>
+  <!-- Welcome / Onboarding (first run) -->
+  <div id="onboard" class="modal shown" aria-hidden="false">
+    <div class="modal-card">
+      <div class="egg-hero"></div>
+      <h2>Welcome to <span class="brand">Penguin Expedition</span> 🐧</h2>
+      <p class="muted">Create your account to begin today’s study adventure.</p>
+
+      <div class="stack">
+        <input id="ob-username" class="input" placeholder="Username" autocomplete="username" />
+        <input id="ob-password" class="input" type="password" placeholder="Password" autocomplete="new-password" />
+        <button id="ob-continue" class="btn primary">Start Expedition</button>
+      </div>
     </div>
-    <div class="progress">
-      <span>Level <span id="level">1</span> • XP <span id="xpTotal">0</span> • Coins <span id="coinsTotal">0</span></span>
-      <div class="xpbar"><div id="xpBar"></div></div>
+  </div>
+
+  <!-- Header -->
+  <header class="appbar">
+    <div class="title">
+      <span class="logo">🐧</span>
+      <div>
+        <div class="appname">Penguin Companion</div>
+        <div id="metaLine" class="meta">Level <span id="lvl">1</span> • XP <span id="xp">0.0</span> • Coins <span id="coins">0</span></div>
+      </div>
     </div>
+
     <div class="actions">
       <button id="raceBtn" class="btn ghost">🏁 Race</button>
-      <button id="exportJSON" class="btn ghost">Export JSON</button>
-      <button id="exportCSV" class="btn ghost">Export CSV</button>
-      <label class="btn ghost file">Import
-        <input id="importFile" type="file" accept=".json"/>
+      <button id="exportBtn" class="btn ghost">Export JSON</button>
+      <label class="file">
+        <input id="importFile" type="file" accept="application/json" />
+        <span class="btn ghost">Import</span>
       </label>
       <button id="openSettings" class="btn ghost">⚙️ Settings</button>
     </div>
   </header>
 
-  <!-- ========== MAIN GRID ========== -->
-  <main class="grid" id="appMain">
-    <!-- Tasks -->
+  <!-- Grid -->
+  <main class="grid">
+    <!-- To-Do -->
     <section class="card">
-      <h2>✅ To-Do List</h2>
+      <h3>✅ To-Do List</h3>
       <div class="row">
-        <input id="taskName" type="text" placeholder="New task"/>
-        <select id="taskCategory"></select>
-        <input id="taskXP" type="number" min="0.25" step="0.25" placeholder="XP"/>
-        <button id="addTask" class="btn">Add</button>
+        <input id="taskName" class="input flex" placeholder="New task" />
+        <select id="taskCat" class="input w-110"></select>
+        <input id="taskXP" class="input w-90" type="number" min="0" step="0.25" placeholder="XP" />
+        <button id="addTask" class="btn primary">Add</button>
       </div>
       <ul id="taskList" class="list"></ul>
     </section>
 
     <!-- Pomodoro & Calls -->
     <section class="card">
-      <h2>🍅 Pomodoro & Calls</h2>
-      <div class="row wrap">
-        <button id="callPenguin" class="btn">🎥 Call Penguin</button>
-        <button data-mode="Study" class="btn ghost callMode">Study</button>
-        <button data-mode="Exercise" class="btn ghost callMode">Exercise</button>
-        <button data-mode="Eat" class="btn ghost callMode">Eat</button>
-        <button data-mode="Bath" class="btn ghost callMode">Bath</button>
-        <button data-mode="Sleep" class="btn ghost callMode">Sleep</button>
-        <button id="meetBtn" class="btn ghost">🟣 Create Meet</button>
+      <h3>🍅 Pomodoro & 📞 Calls</h3>
+      <div class="row g8">
+        <button data-call="Call" class="btn" id="callBtn">🎥 Call Penguin</button>
+        <button data-mode="Study" class="btn ghost">Study</button>
+        <button data-mode="Exercise" class="btn ghost">Exercise</button>
+        <button data-mode="Eat" class="btn ghost">Eat</button>
+        <button data-mode="Bath" class="btn ghost">Bath</button>
+        <button data-mode="Sleep" class="btn ghost">Sleep</button>
+        <button id="openMeet" class="btn purple">🟣 Create Meet</button>
       </div>
+      <p class="muted">Ambient Lab is muted by default. Toggle & volume in overlays.</p>
     </section>
 
     <!-- Avatar -->
     <section class="card">
-      <h2>🐧 My Penguin</h2>
-      <div class="avatar-preview">
-        <div id="penguinPreview" class="penguin" aria-label="avatar preview">
-          <div class="body"></div>
-          <div class="wing left"></div><div class="wing right"></div>
-          <div class="eye left"></div><div class="eye right"></div>
-          <div class="beak"></div>
+      <h3>🐧 My Penguin</h3>
+      <!-- Avatar Builder (3D style) -->
+      <div id="avatarPreview" class="avatar-builder">
+        <div id="penguin" class="penguin" aria-label="penguin">
+          <div class="p-body"></div>
+          <div class="p-wing left"></div>
+          <div class="p-wing right"></div>
+          <div class="p-eye left"></div>
+          <div class="p-eye right"></div>
+          <div class="p-beak"></div>
         </div>
-        <div class="info">
-          <p id="avatarName">Pingu</p>
-          <p class="muted small">Your study buddy</p>
+        <div class="col">
+          <div class="big">Hi, I’m <span id="avName">Pingu</span>!</div>
+          <div class="muted">I’ll cheer you on in popups & calls.</div>
+          <input id="nameInput" class="input" placeholder="Penguin name" />
+          <div class="chips">
+            <button class="chip" data-color="#1DA1F2">Blue</button>
+            <button class="chip" data-color="#EF4444">Red</button>
+            <button class="chip" data-color="#22C55E">Green</button>
+            <button class="chip" data-color="#A855F7">Purple</button>
+            <button class="chip" data-color="#F59E0B">Gold</button>
+          </div>
+          <div class="row g8">
+            <label class="select">
+              Head:
+              <select id="headAcc" class="input">
+                <option value="">none</option>
+                <option value="beanie">Beanie</option>
+                <option value="glasses">Glasses</option>
+                <option value="crown">Crown</option>
+                <option value="headphones">Headphones</option>
+              </select>
+            </label>
+            <label class="select">
+              Body:
+              <select id="bodyAcc" class="input">
+                <option value="">none</option>
+                <option value="scarf">Scarf</option>
+                <option value="cape">Cape</option>
+                <option value="backpack">Backpack</option>
+              </select>
+            </label>
+            <label class="select">
+              Effect:
+              <select id="effectAcc" class="input">
+                <option value="">none</option>
+                <option value="aura">Aura</option>
+                <option value="snow">Frost</option>
+                <option value="shadow">Shadow</option>
+              </select>
+            </label>
+          </div>
+          <button id="saveAvatar" class="btn primary">Save Avatar</button>
         </div>
       </div>
-      <input id="avatarInput" type="text" placeholder="Penguin name"/>
-      <div class="chips" id="colorChips">
-        <button class="chip" data-color="#3b82f6">Blue</button>
-        <button class="chip" data-color="#ef4444">Red</button>
-        <button class="chip" data-color="#22c55e">Green</button>
-        <button class="chip" data-color="#a855f7">Purple</button>
-        <button class="chip" data-color="#f59e0b">Gold</button>
-      </div>
+    </section>
+
+    <!-- Stats -->
+    <section class="card">
+      <h3>📊 Category Stats</h3>
+      <div id="stats"></div>
+    </section>
+
+    <!-- Time-Blocking -->
+    <section class="card">
+      <h3>🗓️ Time-Blocking (15-min)</h3>
       <div class="row">
-        <label>Head:
-          <select id="headSelect"></select>
-        </label>
-        <label>Body:
-          <select id="bodySelect"></select>
-        </label>
+        <input id="tbTitle" class="input flex" placeholder="Block title" />
+        <input id="tbFrom" class="input w-120" type="time" value="08:00" />
+        <input id="tbTo" class="input w-120" type="time" value="09:00" />
+        <button id="addBlock" class="btn primary">Add</button>
+        <button id="clearTB" class="btn danger ghost">Clear Schedule</button>
       </div>
-      <label>Effect:
-        <select id="effectSelect"></select>
-      </label>
-      <button id="saveAvatar" class="btn">Save Avatar</button>
+      <div id="timeline" class="timeline"></div>
+      <div class="row"><button id="clearTBHistory" class="btn ghost">🗑️ Clear Today’s History</button></div>
     </section>
 
     <!-- Shop -->
     <section class="card">
-      <h2>🛍️ Shop</h2>
-      <div class="muted small">Coins: <span id="coinsShop">0</span></div>
-      <div id="shopPreview" class="shop-preview">
-        <div id="shopPenguin" class="penguin small">
-          <div class="body"></div>
-          <div class="wing left"></div><div class="wing right"></div>
-          <div class="eye left"></div><div class="eye right"></div>
-          <div class="beak"></div>
-        </div>
+      <h3>🛍️ Shop</h3>
+      <div class="muted">Coins: <span id="coinCount">0</span></div>
+      <div id="shop" class="shop"></div>
+    </section>
+
+    <!-- Alarms -->
+    <section class="card">
+      <h3>⏰ Alarms</h3>
+      <div class="row">
+        <input id="alarmTime" class="input w-140" type="time" />
+        <input id="alarmLabel" class="input flex" placeholder="Go to class" />
+        <select id="alarmSound" class="input w-160">
+          <option>Penguin Beep-Boo</option>
+          <option>Soft Bell</option>
+          <option>Retro Ping</option>
+        </select>
+        <button id="addAlarm" class="btn primary">Add</button>
       </div>
-      <div id="shopGrid" class="shop"></div>
+      <ul id="alarms" class="list"></ul>
+    </section>
+
+    <!-- Daily Challenges -->
+    <section class="card">
+      <h3>🎯 Daily Challenges</h3>
+      <ul id="challenges" class="list"></ul>
     </section>
   </main>
 
-  <!-- ========== CALL OVERLAY (Single-User) ========== -->
-  <div id="callOverlay" class="overlay hidden" aria-hidden="true">
-    <div class="call-scene">
-      <div id="callBg" class="call-bg"></div>
-      <div id="callPenguin" class="penguin large">
-        <div class="body"></div>
-        <div class="wing left"></div><div class="wing right"></div>
-        <div class="eye left"></div><div class="eye right"></div>
-        <div class="beak"></div>
+  <!-- Pomodoro Overlay -->
+  <div id="pomo" class="overlay">
+    <div class="pomo-card">
+      <div class="overlay-head">
+        <div class="row">
+          <div class="mini-penguin" id="pomoPenguin"></div>
+          <div>
+            <div class="big" id="pomoTitle">Focus</div>
+            <div class="muted" id="pomoSub">Let’s crush it!</div>
+          </div>
+        </div>
+        <div class="row g8">
+          <label class="switch"><input id="ambienceToggle" type="checkbox"><span>Ambient</span></label>
+          <input id="ambienceVol" type="range" min="0" max="1" step="0.05" value="0.5" />
+          <button id="minBtn" class="btn ghost">Minimize</button>
+          <button id="closePomo" class="btn danger ghost">Close</button>
+        </div>
       </div>
-      <div id="callAction" class="action-icon"></div>
-      <button id="closeCall" class="btn ghost close" aria-label="Close call">✖</button>
+
+      <div id="pomoScene" class="scene study">
+        <canvas id="pomoAnim" width="560" height="260" aria-hidden="true"></canvas>
+      </div>
+
+      <div class="timer">
+        <div id="timerText" class="bigtimer">25:00</div>
+        <div class="row g8">
+          <button id="pauseBtn" class="btn">⏸️ Pause</button>
+          <button id="doneBtn" class="btn success">✅ Done</button>
+        </div>
+      </div>
+      <p class="muted center">Tip: Open Pomodoro separately if you want both running.</p>
     </div>
   </div>
 
-  <!-- ========== RACE MODAL (Create/Join) ========== -->
-  <div id="raceModal" class="modal hidden" aria-hidden="true">
-    <div class="modal-card race-card">
-      <div class="modal-head">
-        <h3>🏁 Race — Shared Pomodoro</h3>
-        <button id="closeRaceModal" class="btn ghost">✖</button>
-      </div>
-
-      <!-- Step: Choose -->
-      <div id="raceStepChoose">
-        <p class="muted" style="margin-bottom:8px;">Create a room or join by code (Kahoot-style).</p>
-        <div class="row" style="margin-bottom:10px;">
-          <button id="raceCreate" class="btn">Create Room</button>
-          <input id="raceJoinCode" type="text" placeholder="Enter code"/>
-          <button id="raceJoin" class="btn ghost">Join Room</button>
-        </div>
-        <div class="small muted">Tip: Open in another tab to test multi-user sync locally.</div>
-      </div>
-
-      <!-- Step: Host Lobby -->
-      <div id="raceStepHost" class="hidden">
-        <h4>Room Code: <span id="raceRoomCode"></span></h4>
-        <p class="muted small">Share this code with friends. They’ll appear below as they join.</p>
-        <div class="lobby">
-          <ul id="raceParticipants" class="list"></ul>
-        </div>
-        <div class="row" style="margin-top:10px;">
-          <button id="raceStart" class="btn">Start Pomodoro</button>
-          <button id="raceCloseRoom" class="btn ghost">Close Room</button>
-        </div>
-      </div>
-
-      <!-- Step: Joined Lobby -->
-      <div id="raceStepJoin" class="hidden">
-        <h4>Joined Room: <span id="raceJoinedCode"></span></h4>
-        <p class="muted small">Waiting for host to start…</p>
-        <ul id="raceParticipantsYou" class="list"></ul>
-        <div class="row" style="margin-top:10px;">
-          <button id="raceLeave" class="btn ghost">Leave</button>
-        </div>
-      </div>
+  <!-- Floating Call -->
+  <div id="call" class="call">
+    <div class="call-head">
+      <div class="row"><div class="tiny-penguin" id="callPenguin"></div><b id="callLabel">Penguin Call</b></div>
+      <div class="row g8"><button id="restoreCall" class="btn ghost">⛶</button><button id="closeCall" class="btn danger ghost">✖</button></div>
     </div>
+    <div id="callScene" class="call-scene study"></div>
+    <div class="muted center" id="callHint">Studying with you…</div>
   </div>
 
-  <!-- ========== RACE ROOM (Full-Screen Environment) ========== -->
-  <div id="raceRoom" class="overlay hidden" aria-hidden="true">
-    <div class="race-room">
-      <header class="race-header">
-        <div class="race-left">
-          <div class="code">Code: <span id="rrCode"></span></div>
-          <div class="phase">Phase: <span id="rrPhase">Focus</span></div>
-        </div>
-        <div class="race-center">
-          <div id="rrTimer" class="rr-timer">25:00</div>
-          <div class="row" id="rrControls">
-            <!-- Host controls -->
-            <button id="rrPause" class="btn ghost">Pause</button>
-            <button id="rrResume" class="btn ghost hidden">Resume</button>
-            <button id="rrEnd" class="btn danger">End Session</button>
-          </div>
-        </div>
-        <div class="race-right">
-          <button id="rrExit" class="btn ghost">Exit</button>
-        </div>
-      </header>
-
-      <main class="race-main">
-        <!-- Participants + Tasks -->
-        <section class="rr-panel">
-          <h3>Participants</h3>
-          <ul id="rrParticipants" class="list"></ul>
-        </section>
-
-        <section class="rr-panel">
-          <h3>Your Task</h3>
-          <div class="row">
-            <select id="rrTaskPicker"></select>
-            <button id="rrMarkDone" class="btn">Mark Task Complete</button>
-          </div>
-          <div class="muted small" style="margin-top:6px;">
-            Completing during a focus cycle awards coins and XP.
-          </div>
-
-          <h3 style="margin-top:16px;">Leaderboard</h3>
-          <ul id="rrLeaderboard" class="list"></ul>
-        </section>
-
-        <!-- Minigames (only visible during breaks) -->
-        <section class="rr-panel">
-          <h3>Break Mini-Games (5 min)</h3>
-          <div id="rrGames" class="games-grid">
-            <button class="btn ghost rr-game" data-game="reaction">⚡ Reaction</button>
-            <button class="btn ghost rr-game" data-game="memory">🧠 Memory</button>
-            <button class="btn ghost rr-game" data-game="tictactoe">⭕❌ Tic-Tac-Toe</button>
-            <button class="btn ghost rr-game" data-game="connect4">🟡 Connect 4</button>
-          </div>
-          <div id="rrGameArea" class="game-area hidden">
-            <div class="game-head">
-              <span id="rrGameTitle">Game</span>
-              <button id="rrCloseGame" class="btn ghost">Close</button>
-            </div>
-            <div id="rrGameCanvas" class="game-canvas">
-              <!-- Game content injected by JS -->
-            </div>
-          </div>
-        </section>
-      </main>
-
-      <!-- Podium (end of session) -->
-      <div id="rrPodium" class="podium hidden">
-        <h2>🏆 Session Results</h2>
-        <ol id="rrPodiumList"></ol>
-        <button id="rrPodiumClose" class="btn">Close</button>
-      </div>
-    </div>
+  <!-- Toast -->
+  <div id="toast" class="toast">
+    <div class="tiny-penguin" id="toastPenguin"></div>
+    <div><b id="toastTitle">Pingu</b><div id="toastMsg" class="muted">Nice job!</div></div>
   </div>
 
-  <!-- ========== TOAST ========== -->
-  <div id="toast" class="toast hidden" role="status" aria-live="polite">
-    <div id="toastPenguin" class="penguin tiny">
-      <div class="body"></div><div class="wing left"></div><div class="wing right"></div>
-      <div class="eye left"></div><div class="eye right"></div><div class="beak"></div>
-    </div>
-    <div>
-      <b id="toastTitle">Pingu</b>
-      <div id="toastMsg" class="muted small">Welcome back!</div>
-    </div>
-  </div>
-
-  <!-- ========== SETTINGS MODAL ========== -->
-  <div id="settingsModal" class="modal hidden" aria-hidden="true">
-    <div class="modal-card">
-      <div class="modal-head">
-        <h3>Settings</h3>
+  <!-- Settings -->
+  <div id="settings" class="modal" aria-hidden="true">
+    <div class="modal-card w-520">
+      <div class="row between">
+        <h3>⚙️ Settings</h3>
         <button id="closeSettings" class="btn ghost">✖</button>
       </div>
-      <div class="modal-grid">
-        <div>
-          <h4>General</h4>
-          <label class="block">Language
-            <select id="langSelect">
-              <option value="en">English</option>
-              <option value="es">Español</option>
-            </select>
-          </label>
-          <label class="block">Default Study Call theme
-            <select id="prefTheme">
+      <div class="stack">
+        <div class="row">
+          <label class="select">Default Theme
+            <select id="themeSelect" class="input">
               <option value="tech">Tech Lab</option>
               <option value="arctic">Arctic Base</option>
               <option value="sunset">Sunset Beach</option>
-              <option value="nebula">Night Nebula</option>
+              <option value="midnight">Midnight</option>
             </select>
           </label>
         </div>
-        <div>
-          <h4>Avatar</h4>
-          <div class="row">
-            <input id="settingsAvatarName" type="text" placeholder="Name"/>
-            <button id="settingsSaveAvatar" class="btn">Save</button>
-          </div>
-          <div class="chips" id="settingsColorChips">
-            <button class="chip" data-color="#3b82f6">Blue</button>
-            <button class="chip" data-color="#ef4444">Red</button>
-            <button class="chip" data-color="#22c55e">Green</button>
-            <button class="chip" data-color="#a855f7">Purple</button>
-            <button class="chip" data-color="#f59e0b">Gold</button>
-          </div>
-          <div class="row">
-            <label>Head:
-              <select id="settingsHeadSelect"></select>
-            </label>
-            <label>Body:
-              <select id="settingsBodySelect"></select>
-            </label>
-          </div>
-          <label>Effect:
-            <select id="settingsEffectSelect"></select>
-          </label>
-          <div class="small muted" style="margin-top:6px;">(These mirror the avatar section controls)</div>
+        <div class="row g16 wrap">
+          <label>Focus (min) <input id="setFocus" class="input w-90" type="number" min="1" value="25" /></label>
+          <label>Short Break (min) <input id="setBreak" class="input w-90" type="number" min="1" value="5" /></label>
+          <label>Auto-start next phase <input id="autoNext" type="checkbox" /></label>
+        </div>
+        <div class="row g8">
+          <button id="recalcBtn" class="btn ghost">Recalculate XP & Coins</button>
+          <button id="resetTodayBtn" class="btn ghost">Reset Today Only</button>
+          <button id="wipeBtn" class="btn danger">Clear All Data</button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- ========== ONBOARDING (FIRST RUN) ========== -->
-  <div id="onboarding" class="modal hidden" aria-hidden="true">
-    <div class="modal-card onboarding-card">
-      <div class="modal-head">
-        <h3 id="onTitle">Welcome to Frostbyte Quest</h3>
+  <!-- Race Environment -->
+  <div id="race" class="overlay">
+    <div class="race-card">
+      <div class="row between">
+        <h3>🏁 Penguin Race</h3>
+        <button id="exitRace" class="btn ghost">✖</button>
       </div>
-
-      <!-- STEP 1: Egg -->
-      <div id="stepEgg" class="on-step">
-        <div class="egg-wrap">
-          <div class="egg">
-            <div class="crack"></div>
-          </div>
-          <p class="center muted" style="margin-top:10px;">
-            Your penguin companion is about to hatch…
-          </p>
-        </div>
-        <div class="row center" style="justify-content:center;margin-top:12px;">
-          <button id="startAccount" class="btn">Let’s begin</button>
-        </div>
-      </div>
-
-      <!-- STEP 2: Account -->
-      <div id="stepAccount" class="on-step hidden">
-        <h4 style="margin-bottom:8px;">Create your account</h4>
-        <div class="row wrap">
-          <input id="accUsername" type="text" placeholder="Username" />
-          <input id="accPassword" type="password" placeholder="Password (min 6)" />
-        </div>
-        <div class="row center" style="justify-content:center;margin-top:10px;">
-          <button id="createAccount" class="btn">Create Account</button>
-          <button id="backToEgg" class="btn ghost">Back</button>
-        </div>
-        <p id="accError" class="small muted" style="color:#fca5a5;margin-top:8px;"></p>
-      </div>
-
-      <!-- STEP 3: Avatar -->
-      <div id="stepAvatar" class="on-step hidden">
-        <h4>Personalize your penguin</h4>
-        <div class="avatar-preview" style="margin-top:6px;">
-          <div id="onPenguin" class="penguin">
-            <div class="body"></div>
-            <div class="wing left"></div><div class="wing right"></div>
-            <div class="eye left"></div><div class="eye right"></div>
-            <div class="beak"></div>
-          </div>
-          <div>
-            <input id="onName" type="text" placeholder="Penguin name" />
-            <div class="chips" id="onColorChips" style="margin-top:6px;">
-              <button class="chip" data-color="#3b82f6">Blue</button>
-              <button class="chip" data-color="#ef4444">Red</button>
-              <button class="chip" data-color="#22c55e">Green</button>
-              <button class="chip" data-color="#a855f7">Purple</button>
-              <button class="chip" data-color="#f59e0b">Gold</button>
-            </div>
-            <div class="row" style="margin-top:6px;">
-              <label>Head:
-                <select id="onHead"></select>
-              </label>
-              <label>Body:
-                <select id="onBody"></select>
-              </label>
-            </div>
-            <label>Effect:
-              <select id="onEffect"></select>
-            </label>
-          </div>
-        </div>
-        <div class="row center" style="justify-content:center;margin-top:12px;">
-          <button id="finishOnboarding" class="btn">Finish</button>
-          <button id="backToAccount" class="btn ghost">Back</button>
-        </div>
+      <div id="raceStage" class="stack center">
+        <!-- filled by JS -->
       </div>
     </div>
   </div>
 
-  <!-- ========== AUDIO ========== -->
-  <audio id="bell" src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg" preload="auto"></audio>
-  <audio id="tick" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
+  <!-- Sounds -->
+  <audio id="bell" src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg"></audio>
+  <audio id="ambient" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_5ba8bf9a7e.mp3?filename=ambient-110253.mp3" loop></audio>
 
-  <!-- ========== SCRIPTS ========== -->
   <script src="script.js"></script>
 </body>
 </html>
