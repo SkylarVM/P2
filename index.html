@@ -1,678 +1,249 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>🐧 Penguin Companion — XP Planner</title>
-  <link rel="stylesheet" href="style.css" />
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Penguin Companion — XP Planner</title>
+<link rel="stylesheet" href="style.css" />
 </head>
-<body class="theme-techlab" data-theme="techlab">
-  <!-- ===================== HEADER ===================== -->
-  <header id="appHeader">
-    <div class="brand">
-      <span class="brand-penguin">🐧</span>
-      <h1 id="appTitle">Penguin Companion — XP Planner</h1>
-    </div>
+<body>
 
-    <div class="level-strip">
-      <div class="level-line">
-        <span id="levelLabel">Level 1</span>
-        <span id="xpLabel">• XP 0</span>
-        <span id="coinLabel">• Coins 0</span>
-      </div>
-      <div class="progress">
-        <div id="xpProgress" class="progress-bar" style="width: 0%"></div>
-      </div>
+<header id="appHeader">
+  <div class="brand">
+    <span>🐧</span>
+    <h1>Penguin Companion — XP Planner</h1>
+  </div>
+  <div class="level-strip">
+    <div class="level-line">
+      <span id="levelLabel">Level 1</span>
+      <span id="xpLabel">• XP 0</span>
+      <span id="coinLabel">• Coins 0</span>
     </div>
+    <div class="progress"><div id="xpProgress" class="progress-bar" style="width:0%"></div></div>
+  </div>
+  <div class="header-actions">
+    <button class="btn ghost" id="exportJson">Export JSON</button>
+    <button class="btn ghost" id="exportCsv">Export CSV</button>
+    <label class="btn ghost" for="importFile">Import<input type="file" id="importFile" accept=".json,.csv" hidden></label>
+    <button class="btn ghost" id="btnRace">🏁 Race</button>
+    <button id="settingsBtn" class="btn ghost">⚙️</button>
+  </div>
+</header>
 
-    <div class="header-actions">
-      <button id="btnExportJson" class="btn ghost">Export JSON</button>
-      <button id="btnExportCsv" class="btn ghost">Export CSV</button>
-      <label class="file-btn">
-        Import
-        <input type="file" id="fileImport" accept=".json,.csv" />
-      </label>
-      <button id="btnOpenRace" class="btn pulse">🐧 Race</button>
-      <button id="btnOpenSettings" class="icon-btn" title="Settings">⚙️</button>
-    </div>
-  </header>
+<main id="grid">
 
-  <!-- Floating minimized call bubble -->
-  <div id="miniCallBubble" class="mini-bubble hidden">
-    <div class="mini-head">
-      <span>Penguin Call</span>
-      <div class="mini-actions">
-        <button id="miniCallExpand" class="icon-btn" title="Expand">⛶</button>
-        <button id="miniCallClose" class="icon-btn danger" title="Close">✕</button>
+  <section class="card">
+    <h2>✅ To-Do List</h2>
+    <div class="row">
+      <input id="taskName" class="input" placeholder="New task..." />
+      <input id="taskXp" class="input input-s" placeholder="XP" type="number" />
+    </div>
+    <div class="row">
+      <select id="taskCategory" class="select"><option>Study</option></select>
+      <button class="btn ghost" id="addCategory">+ Add Category</button>
+      <button class="btn primary" id="addTask">Add Task</button>
+    </div>
+    <ul id="taskList" class="list"></ul>
+  </section>
+
+  <section class="card">
+    <h2>🎁 Reward Store</h2>
+    <div class="row">
+      <input id="rewardName" class="input" placeholder="New reward..." />
+      <input id="rewardCost" class="input input-s" placeholder="Cost XP" type="number" />
+      <button class="btn primary" id="addReward">Add</button>
+    </div>
+    <ul id="rewardList" class="list"></ul>
+  </section>
+
+  <section class="card">
+    <h2>📅 History (Today)</h2>
+    <div id="historySummary" class="small muted">Total: 0 Pomodoros • 0 XP earned</div>
+    <ul id="historyList" class="list"></ul>
+  </section>
+
+  <section class="card">
+    <h2>📊 Category Stats</h2>
+    <div id="statsBars"></div>
+  </section>
+
+  <section class="card">
+    <h2>⏱️ Pomodoro & 📞 Calls</h2>
+    <div class="row gap wrap">
+      <label>Focus <input id="focusMinutes" class="input input-s" type="number" value="25"></label>
+      <label>Short <input id="breakMinutes" class="input input-s" type="number" value="5"></label>
+      <label>Long <input id="longMinutes" class="input input-s" type="number" value="15"></label>
+      <button class="btn primary" id="savePomodoro">Save</button>
+    </div>
+    <div class="btn-row">
+      <button class="btn primary" id="callPenguinBtn">🐧 Call Penguin</button>
+      <button class="btn ghost" data-mode="Study">Study</button>
+      <button class="btn ghost" data-mode="Exercise">Exercise</button>
+      <button class="btn ghost" data-mode="Eat">Eat</button>
+      <button class="btn ghost" data-mode="Bath">Bath</button>
+      <button class="btn ghost" data-mode="Sleep">Sleep</button>
+      <button class="btn success" id="openPomodoro">🍅 Open Pomodoro</button>
+    </div>
+    <button class="btn ghost" id="shareCall">🟡 Share call (Meet)</button>
+    <div class="hint">Ambient Lab hum is muted by default. Toggle & volume available in full-screen overlays.</div>
+  </section>
+
+  <section class="card">
+    <h2>🧮 & 🔍 Tools</h2>
+    <div class="row gap">
+      <button class="btn primary" id="btnOpenCalc">Open Calculator</button>
+      <button class="btn primary" id="btnOpenSearch">Open Quick Search</button>
+    </div>
+    <div class="hint">Both open as pop-ups so you can keep working.</div>
+  </section>
+
+  <section class="card">
+    <h2>⏰ Alarms</h2>
+    <div class="row gap wrap">
+      <input id="alarmTime" type="time" class="input input-s">
+      <input id="alarmLabel" class="input" placeholder="Go to class">
+      <select id="alarmSound" class="select"><option>Penguin Beep-Boo</option></select>
+      <button id="addAlarm" class="btn primary">Add</button>
+    </div>
+    <ul id="alarmList" class="list"></ul>
+  </section>
+
+  <section class="card wide">
+    <h2>🗓️ Time-Blocking (15-min)</h2>
+    <div class="row gap wrap">
+      <input id="blockTitle" class="input" placeholder="Block title">
+      <input id="blockStart" class="input input-s" type="time" value="08:00">
+      <input id="blockEnd" class="input input-s" type="time" value="09:00">
+      <button id="addBlock" class="btn primary">Add</button>
+      <button id="clearSchedule" class="btn danger">Clear Schedule</button>
+      <button id="clearHistory" class="btn ghost">Clear Today's History</button>
+    </div>
+    <div id="dayGrid" class="day-grid">
+      <div id="nowMarker" class="now-marker"></div>
+    </div>
+  </section>
+
+  <!-- Avatar Section with full Penguin Builder -->
+  <section class="card" id="cardAvatar">
+    <h2>🐧 My Penguin</h2>
+    <div id="avatarPreview">
+      <div id="penguinPreview" class="penguin">
+        <div class="body"></div>
+        <div class="wing left"></div>
+        <div class="wing right"></div>
+        <div class="eye left"></div>
+        <div class="eye right"></div>
+        <div class="beak"></div>
+      </div>
+      <div>
+        <div>Hi, I’m <span id="avatarName">Pingu</span>!</div>
+        <div class="small">I’ll cheer you on in popups & calls.</div>
       </div>
     </div>
-    <div class="mini-body">
-      <div class="mini-penguin" id="miniCallPenguin"></div>
-      <div class="mini-line">
-        <span id="miniCallStatus">Studying with you...</span>
-        <span id="miniPomodoroTick" class="tag hidden">00:00</span>
+    <div class="row mt">
+      <input id="nameInput" class="input" value="Pingu">
+    </div>
+    <div class="row mt">
+      <div class="swatch" data-color="blue"></div>
+      <div class="swatch" data-color="red"></div>
+      <div class="swatch" data-color="green"></div>
+      <div class="swatch" data-color="purple"></div>
+      <div class="swatch" data-color="gold"></div>
+    </div>
+    <div class="row mt">
+      <select id="headAccessory" class="select"><option>Head: none</option></select>
+      <select id="bodyAccessory" class="select"><option>Body: none</option></select>
+    </div>
+    <div class="row mt">
+      <select id="effectSelect" class="select"><option>Effect: none</option></select>
+    </div>
+    <button id="saveAvatar" class="btn primary mt">Save Avatar</button>
+  </section>
+
+  <section class="card">
+    <h2>🏪 Penguin Shop</h2>
+    <div class="small muted">Coins: <span id="coinCount">0</span> • Owned accessories: <span id="ownedCount">0</span></div>
+    <div class="shop-columns">
+      <div><h4>Accessories</h4><div id="shopAccessories" class="shop-grid"></div></div>
+      <div><h4>Themes</h4><div id="shopThemes" class="shop-grid"></div></div>
+      <div><h4>Effects</h4><div id="shopEffects" class="shop-grid"></div></div>
+    </div>
+  </section>
+
+</main>
+
+<!-- Overlays -->
+<div id="pomodoroOverlay" class="overlay hidden">
+  <div class="overlay-inner">
+    <div class="overlay-head">Pomodoro <button class="btn ghost" id="closePomodoro">✖</button></div>
+    <div class="overlay-body center">
+      <div class="big-timer" id="pomTimer">25:00</div>
+      <div class="row gap center">
+        <button id="startPomodoro" class="btn primary">Start</button>
+        <button id="pausePomodoro" class="btn ghost">Pause</button>
+        <button id="donePomodoro" class="btn success">Done</button>
       </div>
     </div>
   </div>
+</div>
 
-  <!-- ===================== MAIN GRID ===================== -->
-  <main id="grid">
-    <!-- ===== Tasks ===== -->
-    <section class="card col" id="cardTasks">
-      <header class="card-title">
-        <span>✅ To-Do List</span>
-      </header>
-
+<div id="callOverlay" class="overlay hidden">
+  <div class="overlay-inner wide">
+    <div class="overlay-head">Penguin Call
       <div class="row gap">
-        <input id="taskName" class="input" placeholder="New task…" />
-        <input id="taskXp" class="input input-s" placeholder="XP" inputmode="decimal" />
-      </div>
-
-      <div class="row gap">
-        <select id="taskCategory" class="select">
-          <option value="Study">Study</option>
-          <option value="Work">Work</option>
-          <option value="Self-Care">Self-Care</option>
-          <option value="Other">Other</option>
-        </select>
-        <button id="btnAddCategory" class="btn ghost">+ Add Category</button>
-      </div>
-
-      <div class="row gap">
-        <button id="btnAddTask" class="btn primary">Add Task</button>
-      </div>
-
-      <ul id="taskList" class="list task-list">
-        <!-- task items injected here -->
-      </ul>
-    </section>
-
-    <!-- ===== Rewards ===== -->
-    <section class="card col" id="cardRewards">
-      <header class="card-title">
-        <span>🎁 Reward Store</span>
-      </header>
-
-      <div class="row gap">
-        <input id="rewardName" class="input" placeholder="New reward…" />
-        <input id="rewardCost" class="input input-s" placeholder="Cost XP" inputmode="decimal" />
-        <button id="btnAddReward" class="btn primary">Add</button>
-      </div>
-
-      <ul id="rewardList" class="list reward-list">
-        <!-- reward items -->
-      </ul>
-    </section>
-
-    <!-- ===== History (Today) ===== -->
-    <section class="card col" id="cardHistory">
-      <header class="card-title">
-        <span>🗓️ History (Today)</span>
-      </header>
-      <div id="historySummary" class="muted small">Total: 0 Pomodoros • 0 XP earned</div>
-      <ul id="historyList" class="list history-list"></ul>
-    </section>
-
-    <!-- ===== Category Stats ===== -->
-    <section class="card col" id="cardStats">
-      <header class="card-title">
-        <span>📊 Category Stats</span>
-      </header>
-      <div id="statsBars" class="stats">
-        <!-- bars injected here -->
-      </div>
-    </section>
-
-    <!-- ===== Pomodoro & Calls ===== -->
-    <section class="card col" id="cardPomodoro">
-      <header class="card-title">
-        <span>⏱️ Pomodoro & 📞 Calls</span>
-      </header>
-
-      <div class="row gap wrap">
-        <div class="field">
-          <label>Focus</label>
-          <input id="pmFocus" class="input input-s" value="25" />
-        </div>
-        <div class="field">
-          <label>Short</label>
-          <input id="pmShort" class="input input-s" value="5" />
-        </div>
-        <div class="field">
-          <label>Long</label>
-          <input id="pmLong" class="input input-s" value="15" />
-        </div>
-        <button id="btnSavePomodoro" class="btn">Save</button>
-      </div>
-
-      <div class="row gap wrap">
-        <button id="btnCallPenguin" class="btn primary">🎥 Call Penguin</button>
-        <button data-call="Study" class="btn ghost btnCallMode">Study</button>
-        <button data-call="Exercise" class="btn ghost btnCallMode">Exercise</button>
-        <button data-call="Eat" class="btn ghost btnCallMode">Eat</button>
-        <button data-call="Bath" class="btn ghost btnCallMode">Bath</button>
-        <button data-call="Sleep" class="btn ghost btnCallMode">Sleep</button>
-        <button id="btnOpenPomodoro" class="btn success">🍅 Open Pomodoro</button>
-        <button id="btnShareMeet" class="btn ghost">🤝 Share call (Meet)</button>
-      </div>
-
-      <p class="hint">Ambient Lab hum is muted by default. Toggle &amp; volume available in full-screen overlays.</p>
-    </section>
-
-    <!-- ===== Tools ===== -->
-    <section class="card col" id="cardTools">
-      <header class="card-title">
-        <span>🧮 & 🔎 Tools</span>
-      </header>
-      <div class="row gap">
-        <button id="btnOpenCalc" class="btn primary">Open Calculator</button>
-        <button id="btnOpenSearch" class="btn primary">Open Quick Search</button>
-      </div>
-      <p class="hint">Both open as pop-ups so you can keep working.</p>
-    </section>
-
-    <!-- ===== Alarms ===== -->
-    <section class="card col" id="cardAlarms">
-      <header class="card-title">
-        <span>⏰ Alarms</span>
-      </header>
-
-      <div class="row gap wrap">
-        <input id="alarmTime" type="time" class="input input-s" />
-        <input id="alarmLabel" class="input" placeholder="Go to class" />
-      </div>
-
-      <div class="row gap">
-        <select id="alarmSound" class="select">
-          <option value="penguin">Penguin Beep-Boo</option>
-          <option value="bell">Soft Bell</option>
-          <option value="retro">Retro Beep</option>
-        </select>
-        <button id="btnAddAlarm" class="btn primary">Add</button>
-      </div>
-
-      <ul id="alarmList" class="list alarm-list"></ul>
-    </section>
-
-    <!-- ===== Time Blocking ===== -->
-    <section class="card col wide" id="cardSchedule">
-      <header class="card-title">
-        <span>📅 Time-Blocking (15-min)</span>
-      </header>
-
-      <div class="row gap wrap">
-        <input id="blockTitle" class="input" placeholder="Block title" />
-        <div class="row gap">
-          <input id="blockStart" type="time" class="input input-s" value="08:00" step="900" />
-          <span class="sep">—</span>
-          <input id="blockEnd" type="time" class="input input-s" value="09:00" step="900" />
-        </div>
-        <input id="blockColor" type="color" class="input input-s" value="#4c8bf5" />
-        <button id="btnAddBlock" class="btn primary">Add</button>
-      </div>
-
-      <div class="row gap wrap">
-        <button id="btnAddFromTasks" class="btn ghost">📋 Add from Tasks</button>
-        <button id="btnClearSchedule" class="btn ghost">🧹 Clear Schedule</button>
-        <button id="btnClearHistory" class="btn ghost danger">🗑️ Clear Today’s History</button>
-      </div>
-
-      <div id="dayScroller" class="day-scroller">
-        <div id="nowMarker" class="now-marker">🐧</div>
-        <div id="dayGrid" class="day-grid">
-          <!-- 00:00 .. 24:00 slots injected by JS -->
-        </div>
-      </div>
-      <p class="hint">Click a block to edit or delete. The penguin marks the current time.</p>
-    </section>
-
-    <!-- ===== Avatar (My Penguin) ===== -->
-    <section class="card col" id="cardAvatar">
-      <header class="card-title">
-        <span>🐧 My Penguin</span>
-      </header>
-
-      <div class="avatar-row">
-        <div id="avatarPreview" class="avatar-3d"></div>
-        <div class="avatar-greet">
-          <div class="greet-line"><strong>Hi, I’m <span id="avatarNameInline">Pingu</span>!</strong></div>
-          <div class="muted">I’ll cheer you on in popups &amp; calls.</div>
-        </div>
-      </div>
-
-      <input id="avatarName" class="input" placeholder="Pingu" value="Pingu" />
-
-      <div class="row palette">
-        <button class="swatch" data-color="blue">Blue</button>
-        <button class="swatch" data-color="red">Red</button>
-        <button class="swatch" data-color="green">Green</button>
-        <button class="swatch active" data-color="purple">Purple</button>
-        <button class="swatch" data-color="gold">Gold</button>
-      </div>
-
-      <div class="row gap wrap">
-        <select id="avatarHead" class="select">
-          <option value="none">Head: none</option>
-        </select>
-        <select id="avatarBody" class="select">
-          <option value="none">Body: none</option>
-        </select>
-      </div>
-
-      <div class="row">
-        <select id="avatarEffect" class="select wide">
-          <option value="none">Effect: none</option>
-        </select>
-      </div>
-
-      <button id="btnSaveAvatar" class="btn primary">Save Avatar</button>
-    </section>
-
-    <!-- ===== Penguin Shop ===== -->
-    <section class="card col" id="cardShop">
-      <header class="card-title">
-        <span>🛍️ Penguin Shop</span>
-      </header>
-
-      <div id="shopNote" class="muted small">Coins: <span id="coinCount">0</span> • Owned accessories: <span id="ownedCount">0</span></div>
-
-      <div class="shop-columns">
-        <div>
-          <h4>Accessories</h4>
-          <div id="shopAccessories" class="shop-grid">
-            <!-- injected -->
-          </div>
-        </div>
-
-        <div>
-          <h4>Themes</h4>
-          <div id="shopThemes" class="shop-grid">
-            <!-- injected -->
-          </div>
-        </div>
-
-        <div>
-          <h4>Effects</h4>
-          <div id="shopEffects" class="shop-grid">
-            <!-- injected -->
-          </div>
-        </div>
-      </div>
-    </section>
-  </main>
-
-  <!-- ===================== OVERLAYS & MODALS ===================== -->
-
-  <!-- Pomodoro Overlay -->
-  <div id="pomodoroOverlay" class="overlay hidden" role="dialog" aria-modal="true">
-    <div class="overlay-inner">
-      <div class="overlay-head">
-        <div class="left">
-          <button id="btnPomStart" class="btn success">Start</button>
-          <button id="btnPomPause" class="btn">Pause</button>
-          <button id="btnPomDone" class="btn primary">Done</button>
-        </div>
-        <div class="right">
-          <button id="btnPomMinimize" class="btn ghost">Minimize</button>
-          <button id="btnPomClose" class="btn danger">Close</button>
-        </div>
-      </div>
-
-      <div class="overlay-body">
-        <div class="focus-title">
-          <span id="focusTaskEmoji">🍅</span>
-          <span>Focus:</span>
-          <strong id="focusTaskTitle">—</strong>
-        </div>
-
-        <div id="pomodoroModeLabel" class="muted">Focus</div>
-        <div id="pomTimer" class="big-timer">25:00</div>
-
-        <div class="ambient-controls">
-          <span>🔊 Ambient</span>
-          <label class="switch">
-            <input id="ambientToggle" type="checkbox" />
-            <span class="slider"></span>
-          </label>
-          <input id="ambientVolume" type="range" min="0" max="1" step="0.01" value="0.6" />
-        </div>
-
-        <p class="hint">Tip: Open Pomodoro separately if you want both running.</p>
+        <button class="btn ghost" id="minimizeCall">Minimize</button>
+        <button class="btn danger" id="closeCall">Close</button>
       </div>
     </div>
+    <div id="callStage" class="overlay-body center"></div>
   </div>
+</div>
 
-  <!-- Call Overlay -->
-  <div id="callOverlay" class="overlay hidden" role="dialog" aria-modal="true">
-    <div class="overlay-inner">
-      <div class="overlay-head">
-        <div class="left">
-          <div id="callPersona" class="call-persona">
-            <span id="callName">Pingu</span> — <span id="callMode">Study</span>
-          </div>
-          <div class="ambient-controls">
-            <span>🔊 Ambient</span>
-            <label class="switch">
-              <input id="ambientToggleCall" type="checkbox" />
-              <span class="slider"></span>
-            </label>
-            <input id="ambientVolumeCall" type="range" min="0" max="1" step="0.01" value="0.6" />
-          </div>
-        </div>
-        <div class="right">
-          <button id="btnCallMinimize" class="btn ghost">Minimize</button>
-          <button id="btnCallClose" class="btn danger">Close</button>
-        </div>
-      </div>
-
-      <div class="overlay-body call-body">
-        <div id="callStage" class="call-stage">
-          <!-- Canvas/DOM penguin animation is rendered here -->
-        </div>
-        <div class="call-footer">
-          <button id="btnOpenMeet" class="btn primary">Create Meet Link</button>
-          <div id="callTip" class="hint">Tip: Open Pomodoro separately if you want both running.</div>
-        </div>
-      </div>
-    </div>
+<div id="miniCallBubble" class="mini-bubble hidden">
+  <div class="mini-head"><span>🐧 Pingu Call</span><button class="btn ghost" id="restoreCall">⛶</button></div>
+  <div class="mini-body">
+    <div class="mini-penguin"></div>
+    <div id="miniPomodoroTick" class="tiny muted">00:00</div>
   </div>
+</div>
 
-  <!-- Calculator Modal -->
-  <div id="calcModal" class="modal hidden" role="dialog" aria-modal="true">
-    <div class="modal-inner">
-      <div class="modal-head">
-        <strong>Calculator</strong>
-        <button class="icon-btn" id="btnCalcClose">✕</button>
-      </div>
-      <div class="modal-body">
-        <div id="calcScreen" class="calc-screen">0</div>
-        <div class="calc-grid" id="calcGrid">
-          <!-- buttons injected -->
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Quick Search Modal -->
-  <div id="searchModal" class="modal hidden" role="dialog" aria-modal="true">
-    <div class="modal-inner wide">
-      <div class="modal-head">
-        <strong>Quick Search</strong>
-        <button class="icon-btn" id="btnSearchClose">✕</button>
-      </div>
-      <div class="modal-body">
-        <div class="row gap">
-          <input id="searchQuery" class="input" placeholder="Search concepts, definitions…" />
-          <button id="btnSearchGo" class="btn primary">Search</button>
-        </div>
-        <iframe id="searchFrame" class="search-frame" title="Search Results"></iframe>
-      </div>
-    </div>
-  </div>
-
-  <!-- Settings Sidebar -->
-  <aside id="settingsPanel" class="settings hidden" aria-hidden="true">
-    <div class="settings-head">
-      <strong>Settings</strong>
-      <button id="btnSettingsClose" class="icon-btn">✕</button>
-    </div>
-
-    <div class="settings-body">
-      <section class="set-section">
-        <h4>Appearance</h4>
-        <label class="label">Default Theme</label>
-        <select id="setTheme" class="select">
-          <option value="techlab">Tech Lab</option>
-          <option value="arctic">Arctic Base</option>
-          <option value="sunset">Sunset Beach</option>
-          <option value="space">Space</option>
-        </select>
-
-        <label class="label mt">Language</label>
-        <select id="setLang" class="select">
-          <option value="en">English</option>
-          <option value="es">Español</option>
-          <option value="fr">Français</option>
-        </select>
-
-        <label class="label mt">Default Sound Volume</label>
-        <input id="setVolume" type="range" min="0" max="1" step="0.01" value="0.6" />
-      </section>
-
-      <section class="set-section">
-        <h4>Pomodoro Defaults</h4>
-        <div class="row gap wrap">
-          <div class="field">
-            <label>Work (min)</label>
-            <input id="setWork" class="input input-s" value="25" />
-          </div>
-          <div class="field">
-            <label>Short Break (min)</label>
-            <input id="setShort" class="input input-s" value="5" />
-          </div>
-          <div class="field">
-            <label>Long Break (min)</label>
-            <input id="setLong" class="input input-s" value="15" />
-          </div>
-        </div>
-        <label class="check mt">
-          <input id="setAutoNext" type="checkbox" />
-          <span>Auto-start next phase</span>
-        </label>
-      </section>
-
-      <section class="set-section">
-        <h4>Avatar</h4>
-        <div class="avatar-row small">
-          <div id="settingsAvatarPreview" class="avatar-3d sm"></div>
-          <div class="stack">
-            <input id="settingsAvatarName" class="input" placeholder="Pingu" value="Pingu" />
-            <div class="row palette">
-              <button class="swatch" data-color="blue">Blue</button>
-              <button class="swatch" data-color="red">Red</button>
-              <button class="swatch" data-color="green">Green</button>
-              <button class="swatch active" data-color="purple">Purple</button>
-              <button class="swatch" data-color="gold">Gold</button>
-            </div>
-            <div class="row gap wrap">
-              <select id="settingsHead" class="select">
-                <option value="none">Head: none</option>
-              </select>
-              <select id="settingsBody" class="select">
-                <option value="none">Body: none</option>
-              </select>
-            </div>
-            <select id="settingsEffect" class="select">
-              <option value="none">Effect: none</option>
-            </select>
-            <button id="btnSettingsSaveAvatar" class="btn primary mt">Save Avatar</button>
-          </div>
-        </div>
-      </section>
-
-      <section class="set-section danger-zone">
-        <h4>Data</h4>
-        <div class="row gap wrap">
-          <button id="btnRecalc" class="btn ghost">🔁 Recalculate XP & Coins</button>
-          <button id="btnResetToday" class="btn ghost">Reset Today Only</button>
-          <button id="btnClearAll" class="btn danger">Clear All Data</button>
-        </div>
-      </section>
-    </div>
-  </aside>
-
-  <!-- Race Lobby Modal (Create / Join) -->
-  <div id="raceLobby" class="modal hidden" role="dialog" aria-modal="true">
-    <div class="modal-inner wide">
-      <div class="modal-head">
-        <strong>🐧 Penguin Race</strong>
-        <button id="btnRaceLobbyClose" class="icon-btn">✕</button>
-      </div>
-      <div class="modal-body race-body">
+<!-- Race Modal -->
+<div id="raceLobby" class="modal hidden">
+  <div class="modal-inner">
+    <div class="modal-head">🏁 Penguin Race Lobby <button class="btn ghost" id="closeRace">✖</button></div>
+    <div class="modal-body">
+      <div class="race-body">
         <div class="race-col">
-          <h4>Create</h4>
-          <button id="btnCreateRace" class="btn primary">Create Room</button>
-          <div class="race-code">
-            Code: <strong id="raceCode">—</strong>
-            <button id="btnCopyRaceCode" class="icon-btn">📋</button>
-          </div>
-          <div class="muted small">Share this code with friends.</div>
-          <div class="race-participants">
-            <h5>Participants</h5>
-            <ul id="raceParticipants"></ul>
-          </div>
-          <button id="btnStartRace" class="btn success" disabled>Start Race</button>
+          <button id="createRace" class="btn primary">Create Race</button>
+          <div class="race-code">Your Code: <span id="raceCode">—</span></div>
+          <input id="joinCode" class="input" placeholder="Enter code to join">
+          <button id="joinRace" class="btn success">Join Race</button>
         </div>
-
         <div class="race-col">
-          <h4>Join</h4>
-          <div class="row gap">
-            <input id="joinCode" class="input" placeholder="Enter code…" />
-            <button id="btnJoinRace" class="btn primary">Join</button>
-          </div>
-          <div id="joinInfo" class="muted small">Enter code to join a race room.</div>
+          <h4>Participants</h4>
+          <ul id="raceParticipants"></ul>
+          <button id="startRace" class="btn primary">Start Race</button>
         </div>
       </div>
     </div>
   </div>
+</div>
 
-  <!-- Race Arena Overlay (Full Screen) -->
-  <div id="raceArena" class="overlay hidden" role="dialog" aria-modal="true">
-    <div class="overlay-inner race-inner">
-      <div class="overlay-head">
-        <div class="left">
-          <strong>🐧 Race Arena</strong>
-          <span class="tag" id="raceRoomTag">Code: —</span>
-        </div>
-        <div class="right">
-          <button id="btnLeaveRace" class="btn danger">Leave</button>
-        </div>
-      </div>
-
-      <div class="overlay-body race-grid">
-        <aside class="race-side">
-          <h4>Players</h4>
-          <ul id="racePlayerList" class="list"></ul>
-          <h4 class="mt">Leaderboard</h4>
-          <ul id="raceLeaderboard" class="list"></ul>
-        </aside>
-
-        <section class="race-center">
-          <div class="focus-title center">
-            <span>Shared Pomodoro</span>
-          </div>
-          <div id="racePhase" class="muted">Focus</div>
-          <div id="raceTimer" class="big-timer">25:00</div>
-
-          <div class="row gap center">
-            <button id="btnRaceStart" class="btn success">Start</button>
-            <button id="btnRacePause" class="btn">Pause</button>
-            <button id="btnRaceReset" class="btn ghost">Reset</button>
-          </div>
-
-          <div id="raceTaskSelf" class="row gap center mt">
-            <select id="raceTaskSelect" class="select">
-              <option value="">Choose your task…</option>
-            </select>
-            <button id="btnRaceMarkComplete" class="btn primary">Mark Complete</button>
-          </div>
-
-          <div id="miniGameArea" class="minigame hidden">
-            <!-- mini-games injected during breaks -->
-          </div>
-        </section>
-      </div>
+<div id="raceArena" class="overlay hidden">
+  <div class="overlay-inner wide">
+    <div class="overlay-head">
+      <span id="raceRoomTag">Race Room</span>
+      <button class="btn ghost" id="leaveRace">Leave</button>
+    </div>
+    <div class="overlay-body center">
+      <div class="big-timer" id="raceTimer">25:00</div>
+      <button class="btn primary" id="startRacePom">Start</button>
+      <div id="miniGameArea" class="minigame hidden"></div>
+      <ul id="racePlayerList"></ul>
     </div>
   </div>
+</div>
 
-  <!-- ===================== TEMPLATES (for JS cloning) ===================== -->
-  <template id="tplTaskItem">
-    <li class="item task">
-      <div class="item-main">
-        <div class="item-title">
-          <span class="title"></span>
-          <span class="muted tiny category"></span>
-        </div>
-        <div class="muted tiny xp"></div>
-      </div>
-      <div class="item-actions">
-        <button class="btn ghost btn-focus">🎮 Focus</button>
-        <button class="btn success btn-complete">✓</button>
-        <button class="btn danger btn-delete">🗑</button>
-        <button class="btn ghost btn-edit" title="Edit">✎</button>
-      </div>
-    </li>
-  </template>
-
-  <template id="tplRewardItem">
-    <li class="item reward">
-      <div class="item-main">
-        <div class="item-title">
-          <span class="title"></span>
-        </div>
-        <div class="muted tiny cost"></div>
-      </div>
-      <div class="item-actions">
-        <button class="btn primary btn-buy">Buy</button>
-        <button class="btn danger btn-delete">🗑</button>
-        <button class="btn ghost btn-edit" title="Edit">✎</button>
-      </div>
-    </li>
-  </template>
-
-  <template id="tplHistoryItem">
-    <li class="pill"></li>
-  </template>
-
-  <template id="tplStatBar">
-    <div class="stat-line">
-      <div class="stat-label"></div>
-      <div class="bar">
-        <div class="fill"></div>
-      </div>
-      <div class="stat-percent"></div>
-    </div>
-  </template>
-
-  <template id="tplAlarmItem">
-    <li class="item alarm">
-      <div class="time"></div>
-      <div class="label muted"></div>
-      <div class="item-actions">
-        <button class="btn ghost btn-toggle">On</button>
-        <button class="btn ghost btn-edit">✎</button>
-        <button class="btn danger btn-delete">🗑</button>
-        <button class="btn ghost btn-snooze" title="Snooze 5 min">💤</button>
-      </div>
-    </li>
-  </template>
-
-  <template id="tplShopItem">
-    <div class="shop-card">
-      <div class="shop-icon"></div>
-      <div class="shop-info">
-        <div class="name"></div>
-        <div class="muted tiny desc"></div>
-      </div>
-      <div class="shop-actions">
-        <span class="lock tag hidden">🔒</span>
-        <button class="btn primary btn-buy">Buy</button>
-        <button class="btn ghost btn-equip hidden">Equip</button>
-        <span class="tag owned hidden">Owned</span>
-      </div>
-    </div>
-  </template>
-
-  <!-- ===================== AUDIO ===================== -->
-  <audio id="sfxChime" src="assets/chime.mp3" preload="auto"></audio>
-  <audio id="sfxAlarmPenguin" src="assets/alarm_penguin.mp3" preload="auto"></audio>
-  <audio id="sfxAlarmBell" src="assets/alarm_bell.mp3" preload="auto"></audio>
-  <audio id="sfxAlarmRetro" src="assets/alarm_retro.mp3" preload="auto"></audio>
-  <audio id="sfxAmbient" src="assets/ambient_lab.mp3" loop preload="auto"></audio>
-
-  <!-- ===================== SCRIPTS ===================== -->
-  <script src="script.js"></script>
+<script src="script.js"></script>
 </body>
 </html>
