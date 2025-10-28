@@ -1,35 +1,43 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Penguin Companion — XP Planner</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css"/>
 </head>
 <body>
+  <!-- ========== TOP BAR ========== -->
   <header class="topbar">
-    <div class="brand"><span>🐧</span><h1>Penguin Companion</h1></div>
+    <div class="brand">
+      <span aria-hidden="true">🐧</span>
+      <h1>Penguin Companion</h1>
+      <span id="welcomeUser" class="muted small" style="margin-left:8px;"></span>
+    </div>
     <div class="progress">
-      <span>Level <span id="level">1</span> | XP <span id="xpTotal">0</span> | Coins <span id="coinsTotal">0</span></span>
+      <span>Level <span id="level">1</span> • XP <span id="xpTotal">0</span> • Coins <span id="coinsTotal">0</span></span>
       <div class="xpbar"><div id="xpBar"></div></div>
     </div>
     <div class="actions">
       <button id="raceBtn" class="btn ghost">🏁 Race</button>
       <button id="exportJSON" class="btn ghost">Export JSON</button>
       <button id="exportCSV" class="btn ghost">Export CSV</button>
-      <label class="btn ghost file">Import<input id="importFile" type="file" accept=".json"></label>
+      <label class="btn ghost file">Import
+        <input id="importFile" type="file" accept=".json"/>
+      </label>
       <button id="openSettings" class="btn ghost">⚙️ Settings</button>
     </div>
   </header>
 
-  <main class="grid">
-    <!-- To-do -->
+  <!-- ========== MAIN GRID ========== -->
+  <main class="grid" id="appMain">
+    <!-- Tasks -->
     <section class="card">
       <h2>✅ To-Do List</h2>
       <div class="row">
-        <input id="taskName" type="text" placeholder="New task">
+        <input id="taskName" type="text" placeholder="New task"/>
         <select id="taskCategory"></select>
-        <input id="taskXP" type="number" min="0.25" step="0.25" placeholder="XP">
+        <input id="taskXP" type="number" min="0.25" step="0.25" placeholder="XP"/>
         <button id="addTask" class="btn">Add</button>
       </div>
       <ul id="taskList" class="list"></ul>
@@ -53,14 +61,18 @@
     <section class="card">
       <h2>🐧 My Penguin</h2>
       <div class="avatar-preview">
-        <div id="penguinPreview" class="penguin">
+        <div id="penguinPreview" class="penguin" aria-label="avatar preview">
           <div class="body"></div>
           <div class="wing left"></div><div class="wing right"></div>
-          <div class="eye left"></div><div class="eye right"></div><div class="beak"></div>
+          <div class="eye left"></div><div class="eye right"></div>
+          <div class="beak"></div>
         </div>
-        <div class="info"><p id="avatarName">Pingu</p></div>
+        <div class="info">
+          <p id="avatarName">Pingu</p>
+          <p class="muted small">Your study buddy</p>
+        </div>
       </div>
-      <input id="avatarInput" type="text" placeholder="Penguin name">
+      <input id="avatarInput" type="text" placeholder="Penguin name"/>
       <div class="chips" id="colorChips">
         <button class="chip" data-color="#3b82f6">Blue</button>
         <button class="chip" data-color="#ef4444">Red</button>
@@ -69,11 +81,17 @@
         <button class="chip" data-color="#f59e0b">Gold</button>
       </div>
       <div class="row">
-        <label>Head: <select id="headSelect"></select></label>
-        <label>Body: <select id="bodySelect"></select></label>
+        <label>Head:
+          <select id="headSelect"></select>
+        </label>
+        <label>Body:
+          <select id="bodySelect"></select>
+        </label>
       </div>
-      <label>Effect: <select id="effectSelect"></select></label>
-      <button id="saveAvatar" class="btn primary">Save Avatar</button>
+      <label>Effect:
+        <select id="effectSelect"></select>
+      </label>
+      <button id="saveAvatar" class="btn">Save Avatar</button>
     </section>
 
     <!-- Shop -->
@@ -82,31 +100,296 @@
       <div class="muted small">Coins: <span id="coinsShop">0</span></div>
       <div id="shopPreview" class="shop-preview">
         <div id="shopPenguin" class="penguin small">
-          <div class="body"></div><div class="wing left"></div><div class="wing right"></div>
-          <div class="eye left"></div><div class="eye right"></div><div class="beak"></div>
+          <div class="body"></div>
+          <div class="wing left"></div><div class="wing right"></div>
+          <div class="eye left"></div><div class="eye right"></div>
+          <div class="beak"></div>
         </div>
       </div>
       <div id="shopGrid" class="shop"></div>
     </section>
   </main>
 
-  <!-- Call Overlay -->
-  <div id="callOverlay" class="overlay hidden">
+  <!-- ========== CALL OVERLAY (Single-User) ========== -->
+  <div id="callOverlay" class="overlay hidden" aria-hidden="true">
     <div class="call-scene">
       <div id="callBg" class="call-bg"></div>
-      <div id="callPenguin" class="penguin large"></div>
+      <div id="callPenguin" class="penguin large">
+        <div class="body"></div>
+        <div class="wing left"></div><div class="wing right"></div>
+        <div class="eye left"></div><div class="eye right"></div>
+        <div class="beak"></div>
+      </div>
       <div id="callAction" class="action-icon"></div>
-      <button id="closeCall" class="btn ghost close">✖</button>
+      <button id="closeCall" class="btn ghost close" aria-label="Close call">✖</button>
     </div>
   </div>
 
-  <!-- Toast -->
-  <div id="toast" class="toast hidden">
-    <div id="toastPenguin" class="penguin tiny"><div class="body"></div><div class="wing left"></div><div class="wing right"></div><div class="eye left"></div><div class="eye right"></div><div class="beak"></div></div>
-    <div><b id="toastTitle">Pingu</b><div id="toastMsg" class="muted small">Welcome back!</div></div>
+  <!-- ========== RACE MODAL (Create/Join) ========== -->
+  <div id="raceModal" class="modal hidden" aria-hidden="true">
+    <div class="modal-card race-card">
+      <div class="modal-head">
+        <h3>🏁 Race — Shared Pomodoro</h3>
+        <button id="closeRaceModal" class="btn ghost">✖</button>
+      </div>
+
+      <!-- Step: Choose -->
+      <div id="raceStepChoose">
+        <p class="muted" style="margin-bottom:8px;">Create a room or join by code (Kahoot-style).</p>
+        <div class="row" style="margin-bottom:10px;">
+          <button id="raceCreate" class="btn">Create Room</button>
+          <input id="raceJoinCode" type="text" placeholder="Enter code"/>
+          <button id="raceJoin" class="btn ghost">Join Room</button>
+        </div>
+        <div class="small muted">Tip: Open in another tab to test multi-user sync locally.</div>
+      </div>
+
+      <!-- Step: Host Lobby -->
+      <div id="raceStepHost" class="hidden">
+        <h4>Room Code: <span id="raceRoomCode"></span></h4>
+        <p class="muted small">Share this code with friends. They’ll appear below as they join.</p>
+        <div class="lobby">
+          <ul id="raceParticipants" class="list"></ul>
+        </div>
+        <div class="row" style="margin-top:10px;">
+          <button id="raceStart" class="btn">Start Pomodoro</button>
+          <button id="raceCloseRoom" class="btn ghost">Close Room</button>
+        </div>
+      </div>
+
+      <!-- Step: Joined Lobby -->
+      <div id="raceStepJoin" class="hidden">
+        <h4>Joined Room: <span id="raceJoinedCode"></span></h4>
+        <p class="muted small">Waiting for host to start…</p>
+        <ul id="raceParticipantsYou" class="list"></ul>
+        <div class="row" style="margin-top:10px;">
+          <button id="raceLeave" class="btn ghost">Leave</button>
+        </div>
+      </div>
+    </div>
   </div>
 
+  <!-- ========== RACE ROOM (Full-Screen Environment) ========== -->
+  <div id="raceRoom" class="overlay hidden" aria-hidden="true">
+    <div class="race-room">
+      <header class="race-header">
+        <div class="race-left">
+          <div class="code">Code: <span id="rrCode"></span></div>
+          <div class="phase">Phase: <span id="rrPhase">Focus</span></div>
+        </div>
+        <div class="race-center">
+          <div id="rrTimer" class="rr-timer">25:00</div>
+          <div class="row" id="rrControls">
+            <!-- Host controls -->
+            <button id="rrPause" class="btn ghost">Pause</button>
+            <button id="rrResume" class="btn ghost hidden">Resume</button>
+            <button id="rrEnd" class="btn danger">End Session</button>
+          </div>
+        </div>
+        <div class="race-right">
+          <button id="rrExit" class="btn ghost">Exit</button>
+        </div>
+      </header>
+
+      <main class="race-main">
+        <!-- Participants + Tasks -->
+        <section class="rr-panel">
+          <h3>Participants</h3>
+          <ul id="rrParticipants" class="list"></ul>
+        </section>
+
+        <section class="rr-panel">
+          <h3>Your Task</h3>
+          <div class="row">
+            <select id="rrTaskPicker"></select>
+            <button id="rrMarkDone" class="btn">Mark Task Complete</button>
+          </div>
+          <div class="muted small" style="margin-top:6px;">
+            Completing during a focus cycle awards coins and XP.
+          </div>
+
+          <h3 style="margin-top:16px;">Leaderboard</h3>
+          <ul id="rrLeaderboard" class="list"></ul>
+        </section>
+
+        <!-- Minigames (only visible during breaks) -->
+        <section class="rr-panel">
+          <h3>Break Mini-Games (5 min)</h3>
+          <div id="rrGames" class="games-grid">
+            <button class="btn ghost rr-game" data-game="reaction">⚡ Reaction</button>
+            <button class="btn ghost rr-game" data-game="memory">🧠 Memory</button>
+            <button class="btn ghost rr-game" data-game="tictactoe">⭕❌ Tic-Tac-Toe</button>
+            <button class="btn ghost rr-game" data-game="connect4">🟡 Connect 4</button>
+          </div>
+          <div id="rrGameArea" class="game-area hidden">
+            <div class="game-head">
+              <span id="rrGameTitle">Game</span>
+              <button id="rrCloseGame" class="btn ghost">Close</button>
+            </div>
+            <div id="rrGameCanvas" class="game-canvas">
+              <!-- Game content injected by JS -->
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <!-- Podium (end of session) -->
+      <div id="rrPodium" class="podium hidden">
+        <h2>🏆 Session Results</h2>
+        <ol id="rrPodiumList"></ol>
+        <button id="rrPodiumClose" class="btn">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== TOAST ========== -->
+  <div id="toast" class="toast hidden" role="status" aria-live="polite">
+    <div id="toastPenguin" class="penguin tiny">
+      <div class="body"></div><div class="wing left"></div><div class="wing right"></div>
+      <div class="eye left"></div><div class="eye right"></div><div class="beak"></div>
+    </div>
+    <div>
+      <b id="toastTitle">Pingu</b>
+      <div id="toastMsg" class="muted small">Welcome back!</div>
+    </div>
+  </div>
+
+  <!-- ========== SETTINGS MODAL ========== -->
+  <div id="settingsModal" class="modal hidden" aria-hidden="true">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h3>Settings</h3>
+        <button id="closeSettings" class="btn ghost">✖</button>
+      </div>
+      <div class="modal-grid">
+        <div>
+          <h4>General</h4>
+          <label class="block">Language
+            <select id="langSelect">
+              <option value="en">English</option>
+              <option value="es">Español</option>
+            </select>
+          </label>
+          <label class="block">Default Study Call theme
+            <select id="prefTheme">
+              <option value="tech">Tech Lab</option>
+              <option value="arctic">Arctic Base</option>
+              <option value="sunset">Sunset Beach</option>
+              <option value="nebula">Night Nebula</option>
+            </select>
+          </label>
+        </div>
+        <div>
+          <h4>Avatar</h4>
+          <div class="row">
+            <input id="settingsAvatarName" type="text" placeholder="Name"/>
+            <button id="settingsSaveAvatar" class="btn">Save</button>
+          </div>
+          <div class="chips" id="settingsColorChips">
+            <button class="chip" data-color="#3b82f6">Blue</button>
+            <button class="chip" data-color="#ef4444">Red</button>
+            <button class="chip" data-color="#22c55e">Green</button>
+            <button class="chip" data-color="#a855f7">Purple</button>
+            <button class="chip" data-color="#f59e0b">Gold</button>
+          </div>
+          <div class="row">
+            <label>Head:
+              <select id="settingsHeadSelect"></select>
+            </label>
+            <label>Body:
+              <select id="settingsBodySelect"></select>
+            </label>
+          </div>
+          <label>Effect:
+            <select id="settingsEffectSelect"></select>
+          </label>
+          <div class="small muted" style="margin-top:6px;">(These mirror the avatar section controls)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== ONBOARDING (FIRST RUN) ========== -->
+  <div id="onboarding" class="modal hidden" aria-hidden="true">
+    <div class="modal-card onboarding-card">
+      <div class="modal-head">
+        <h3 id="onTitle">Welcome to Frostbyte Quest</h3>
+      </div>
+
+      <!-- STEP 1: Egg -->
+      <div id="stepEgg" class="on-step">
+        <div class="egg-wrap">
+          <div class="egg">
+            <div class="crack"></div>
+          </div>
+          <p class="center muted" style="margin-top:10px;">
+            Your penguin companion is about to hatch…
+          </p>
+        </div>
+        <div class="row center" style="justify-content:center;margin-top:12px;">
+          <button id="startAccount" class="btn">Let’s begin</button>
+        </div>
+      </div>
+
+      <!-- STEP 2: Account -->
+      <div id="stepAccount" class="on-step hidden">
+        <h4 style="margin-bottom:8px;">Create your account</h4>
+        <div class="row wrap">
+          <input id="accUsername" type="text" placeholder="Username" />
+          <input id="accPassword" type="password" placeholder="Password (min 6)" />
+        </div>
+        <div class="row center" style="justify-content:center;margin-top:10px;">
+          <button id="createAccount" class="btn">Create Account</button>
+          <button id="backToEgg" class="btn ghost">Back</button>
+        </div>
+        <p id="accError" class="small muted" style="color:#fca5a5;margin-top:8px;"></p>
+      </div>
+
+      <!-- STEP 3: Avatar -->
+      <div id="stepAvatar" class="on-step hidden">
+        <h4>Personalize your penguin</h4>
+        <div class="avatar-preview" style="margin-top:6px;">
+          <div id="onPenguin" class="penguin">
+            <div class="body"></div>
+            <div class="wing left"></div><div class="wing right"></div>
+            <div class="eye left"></div><div class="eye right"></div>
+            <div class="beak"></div>
+          </div>
+          <div>
+            <input id="onName" type="text" placeholder="Penguin name" />
+            <div class="chips" id="onColorChips" style="margin-top:6px;">
+              <button class="chip" data-color="#3b82f6">Blue</button>
+              <button class="chip" data-color="#ef4444">Red</button>
+              <button class="chip" data-color="#22c55e">Green</button>
+              <button class="chip" data-color="#a855f7">Purple</button>
+              <button class="chip" data-color="#f59e0b">Gold</button>
+            </div>
+            <div class="row" style="margin-top:6px;">
+              <label>Head:
+                <select id="onHead"></select>
+              </label>
+              <label>Body:
+                <select id="onBody"></select>
+              </label>
+            </div>
+            <label>Effect:
+              <select id="onEffect"></select>
+            </label>
+          </div>
+        </div>
+        <div class="row center" style="justify-content:center;margin-top:12px;">
+          <button id="finishOnboarding" class="btn">Finish</button>
+          <button id="backToAccount" class="btn ghost">Back</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== AUDIO ========== -->
   <audio id="bell" src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg" preload="auto"></audio>
+  <audio id="tick" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
+
+  <!-- ========== SCRIPTS ========== -->
   <script src="script.js"></script>
 </body>
 </html>
