@@ -4,78 +4,69 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>🐧 Penguin Companion — XP Planner</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css"/>
 </head>
 <body>
   <!-- Header -->
-  <header class="app-header">
+  <header class="header">
     <div class="brand">
       <span class="brand-emoji">🐧</span>
       <h1>Penguin Companion — XP Planner</h1>
     </div>
-    <div class="header-stats">
-      <span id="hdrLevel">Level 1</span>
-      <span>•</span>
-      <span id="hdrXP">XP 0.00</span>
-      <span>•</span>
-      <span id="hdrCoins">Coins 0</span>
+    <div class="stats">
+      <span>Level <b id="level">1</b></span>
+      <span>• XP <b id="exp">0.00</b></span>
+      <span>• Coins <b id="coins">0</b></span>
     </div>
-    <button id="btnSettings" class="icon-btn" title="Settings">⚙️</button>
+    <button id="openSettings" class="icon-btn" title="Settings">⚙️</button>
   </header>
+  <div class="progress"><div id="xpBar"></div></div>
 
-  <!-- XP Progress -->
-  <section class="progress-wrap">
-    <div class="progress-bar"><div id="xpBar" class="progress-fill" style="width:0%"></div></div>
-  </section>
-
-  <!-- Main Grid -->
   <main class="grid">
     <!-- Tasks -->
     <section class="card">
-      <h2 data-i18n="tasksTitle">✅ Tasks</h2>
+      <h2>✅ Tasks</h2>
       <div class="row">
-        <input id="taskName" placeholder="Task">
-        <input id="taskXP" type="number" step="0.01" min="0.01" placeholder="XP">
+        <input id="taskName" placeholder="Task"/>
+        <input id="taskXP" type="number" step="0.01" min="0.01" placeholder="XP"/>
         <select id="taskCat"></select>
-        <button id="btnAddTask" class="primary">Add</button>
+        <button id="addTask">Add</button>
       </div>
-      <div class="row">
-        <button id="btnAddCat" class="ghost">+ Category</button>
-      </div>
+      <div class="row"><button id="addCat" class="ghost">+ Category</button></div>
       <ul id="taskList" class="list"></ul>
     </section>
 
     <!-- Rewards -->
     <section class="card">
-      <h2 data-i18n="rewardsTitle">🎁 Rewards</h2>
+      <h2>🎁 Rewards</h2>
       <div class="row">
-        <input id="rewardName" placeholder="Reward">
-        <input id="rewardCost" type="number" step="0.01" min="0.01" placeholder="Cost">
-        <button id="btnAddReward" class="primary">Add</button>
+        <input id="rewardName" placeholder="Reward"/>
+        <input id="rewardCost" type="number" step="0.01" min="0.01" placeholder="Cost"/>
+        <button id="addReward">Add</button>
       </div>
       <ul id="rewardList" class="list"></ul>
     </section>
 
     <!-- Stats -->
     <section class="card">
-      <h2>📊 <span data-i18n="statsTitle">Category Stats</span></h2>
+      <h2>📊 Category Stats</h2>
       <div id="statsChart"></div>
     </section>
 
-    <!-- Planner / Time blocking -->
+    <!-- Planner -->
     <section class="card wide">
-      <h2>📆 <span data-i18n="plannerTitle">Time-Blocking (15-min)</span></h2>
+      <h2>📆 Time-Blocking (15-min)</h2>
       <div class="row">
-        <input id="schedTitle" placeholder="Block title">
-        <input id="schedStart" type="time" step="900" value="08:00">
-        <input id="schedEnd" type="time" step="900" value="09:00">
-        <input id="schedColor" type="color" value="#60a5fa">
-        <button id="btnAddBlock" class="primary">Add</button>
+        <input id="schedTitle" placeholder="Block title"/>
+        <input id="schedStart" type="time" step="900" value="08:00"/>
+        <input id="schedEnd" type="time" step="900" value="09:00"/>
+        <input id="schedColor" type="color" value="#60a5fa"/>
+        <button id="addBlock">Add</button>
       </div>
       <div class="row">
-        <button id="btnAddFromTasks">📋 Add from Tasks</button>
-        <button id="btnClearSchedule" class="ghost">🧹 Clear Schedule</button>
-        <button id="btnClearToday" class="ghost">🗑 Clear Today’s History</button>
+        <button id="addFromTasks">📋 Add from Tasks</button>
+        <button id="clearSchedule" class="ghost">🧹 Clear Schedule</button>
+        <button id="clearToday" class="ghost">🗑 Clear Today’s History</button>
       </div>
       <div id="scheduleWrap">
         <div id="timeline">
@@ -85,78 +76,95 @@
           <div id="nowPenguin">🐧</div>
         </div>
       </div>
-      <p class="hint" data-i18n="clickBlock">Click a block to edit or delete.</p>
+      <p class="muted">Click a block to edit.</p>
     </section>
 
     <!-- Avatar -->
     <section class="card">
-      <h2>🐧 <span data-i18n="avatarTitle">My Penguin</span></h2>
+      <h2>🐧 My Penguin</h2>
       <div class="row center">
         <div id="avatarPreview" class="penguin">
-          <div class="body"></div><div class="wing left"></div><div class="wing right"></div>
-          <div class="eye left"></div><div class="eye right"></div><div class="beak"></div>
+          <div class="body"></div><div class="wing l"></div><div class="wing r"></div>
+          <div class="eye l"></div><div class="eye r"></div><div class="beak"></div>
         </div>
-        <div class="hello"><span data-i18n="hiIm">Hi, I’m</span> <strong id="avatarName">Pingu</strong>!</div>
+        <div>Hi, I’m <b id="avatarName">Pingu</b>!</div>
       </div>
-      <div class="row"><input id="nameInput" placeholder="Name (e.g., Penny)"></div>
-      <div class="row wrap" id="colorChips"></div>
+      <div class="row"><input id="avatarInputName" placeholder="Name (e.g., Penny)"/></div>
       <div class="row">
-        <select id="equipHead" class="grow"></select>
-        <select id="equipBody" class="grow"></select>
-        <select id="equipEffect" class="grow"></select>
+        <button class="chip" data-color="#0ea5e9">Blue</button>
+        <button class="chip" data-color="#ef4444">Red</button>
+        <button class="chip" data-color="#22c55e">Green</button>
+        <button class="chip" data-color="#a855f7">Purple</button>
+        <button class="chip" data-color="#f59e0b">Gold</button>
       </div>
-      <div class="row"><button id="btnSaveAvatar" class="primary">Save Avatar</button></div>
+      <div class="row">
+        <select id="equipHead">
+          <option value="">Head: none</option>
+          <option value="cap">Cap</option><option value="crown">Crown</option>
+          <option value="grad">Grad Hat</option><option value="headphones">Headphones</option><option value="glasses">Glasses</option>
+        </select>
+        <select id="equipBody">
+          <option value="">Body: none</option>
+          <option value="scarf">Scarf</option><option value="bow">Bow</option>
+          <option value="cape">Cape</option><option value="mittens">Mittens</option>
+        </select>
+        <select id="equipEffect">
+          <option value="">Effect: none</option>
+          <option value="aura">Aura</option><option value="rainbow">Rainbow Aura</option><option value="frost">Frost Aura</option>
+        </select>
+      </div>
+      <div class="row"><button id="saveAvatar">Save Avatar</button></div>
     </section>
 
     <!-- Shop -->
     <section class="card wide">
-      <h2>🛍️ <span data-i18n="shopTitle">Penguin Shop</span></h2>
-      <div id="shopGrid" class="shop-grid"></div>
+      <h2>🛍️ Penguin Shop</h2>
+      <div id="shopGrid" class="shop"></div>
     </section>
 
     <!-- Pomodoro & Calls -->
     <section class="card">
       <h2>⏱️ Pomodoro & 📞 Calls</h2>
       <div class="row wrap">
-        <label>Focus <input id="focusInput" type="number" min="1" value="25"></label>
-        <label>Break <input id="breakInput" type="number" min="1" value="5"></label>
-        <label>Long <input id="longBreakInput" type="number" min="1" value="15"></label>
-        <button id="btnSavePomo" class="primary">Save</button>
+        <label>Focus <input id="focusInput" type="number" min="1" value="25"/></label>
+        <label>Short <input id="breakInput" type="number" min="1" value="5"/></label>
+        <label>Long <input id="longBreakInput" type="number" min="1" value="15"/></label>
+        <button id="savePomo">Save</button>
       </div>
       <div class="row wrap">
-        <button id="btnCall" class="primary">🎥 Call Penguin</button>
+        <button id="callChill">🎥 Call Penguin</button>
         <button class="ghost" data-call="Study">Study</button>
         <button class="ghost" data-call="Exercise">Exercise</button>
         <button class="ghost" data-call="Eat">Eat</button>
         <button class="ghost" data-call="Bath">Bath</button>
         <button class="ghost" data-call="Sleep">Sleep</button>
-        <button id="btnOpenPomo" class="ghost">🍅 Open Pomodoro</button>
-        <button id="btnMeet" class="ghost">🔗 Share call (Meet)</button>
+        <button class="ghost" id="openPomo">🍅 Open Pomodoro</button>
+        <button class="ghost" id="shareMeet">🔗 Share call (Meet)</button>
       </div>
-      <p class="hint">Ambient Lab hum is muted by default. Toggle in overlays.</p>
+      <p class="muted">Ambient Lab hum is muted by default. Toggle in overlays.</p>
     </section>
 
     <!-- Tools -->
     <section class="card">
       <h2>🧮 & 🔍 Tools</h2>
-      <div class="row space">
-        <button id="btnCalc">Open Calculator</button>
-        <button id="btnSearch">Open Quick Search</button>
+      <div class="row between">
+        <button id="openCalcBtn">Open Calculator</button>
+        <button id="openSearchBtn">Open Quick Search</button>
       </div>
     </section>
 
     <!-- Alarms -->
     <section class="card">
       <h2>⏰ Alarms</h2>
-      <div class="row wrap">
-        <input id="alarmTime" type="time" step="60" value="08:00">
-        <input id="alarmLabel" placeholder="Label">
+      <div class="row">
+        <input id="alarmTime" type="time" step="60" value="08:00"/>
+        <input id="alarmLabel" placeholder="Label"/>
         <select id="alarmTone">
-          <option value="soft">Soft Digital 🔔</option>
-          <option value="beep">Penguin Beep-Boop 🐧</option>
-          <option value="ping">Pure Ping 🎧</option>
+          <option value="soft">Soft Digital</option>
+          <option value="beep">Beep-Boop</option>
+          <option value="ping">Pure Ping</option>
         </select>
-        <button id="btnAddAlarm" class="primary">Add</button>
+        <button id="addAlarm">Add</button>
       </div>
       <ul id="alarmList" class="list"></ul>
     </section>
@@ -164,62 +172,59 @@
     <!-- History -->
     <section class="card wide">
       <h2>📅 History (Today)</h2>
-      <div id="historySummary" class="hint">Total: 0 Pomodoros • 0 XP earned</div>
+      <div id="historySummary" class="muted">Total: 0 Pomodoros • 0 XP earned</div>
       <ul id="historyList" class="list"></ul>
     </section>
 
-    <!-- Export / Import -->
+    <!-- Export/Import -->
     <section class="card wide">
-      <h2>💾 Export / Import</h2>
+      <h2>💾 Data — Export / Import</h2>
       <div class="row wrap">
-        <button id="btnExportJSON" class="primary">Export JSON</button>
-        <button id="btnExportCSV" class="ghost">Export CSV</button>
-        <input id="importFile" type="file" accept=".json,.csv" style="display:none">
-        <button id="btnImport">Import (JSON/CSV)</button>
-        <label class="hint"><input id="overwriteImport" type="checkbox"> Overwrite instead of merge</label>
+        <button id="exportJSON">Export JSON</button>
+        <button id="exportCSV" class="ghost">Export CSV</button>
+        <input id="importFile" type="file" accept=".json,.csv" hidden/>
+        <button id="importBtn">Import (JSON/CSV)</button>
+        <label class="muted"><input id="overwriteImport" type="checkbox"/> Overwrite instead of merge</label>
       </div>
     </section>
 
     <!-- Race Mode -->
     <section class="card wide">
-      <h2>🏁 Race Mode (Shared Pomodoro)</h2>
+      <h2>🏁 Race Mode (Multiplayer Pomodoro)</h2>
       <div class="row wrap">
-        <button id="btnRaceCreate" class="primary">Create Room</button>
-        <button id="btnRaceJoin" class="ghost">Join Room</button>
-        <input id="raceCodeInput" placeholder="Enter code">
-        <span id="raceCodeBadge" class="badge"></span>
+        <button id="raceCreate">Create Race</button>
+        <input id="raceCodeJoin" placeholder="Enter code…"/>
+        <button id="raceJoin">Join Race</button>
+        <span id="raceCodeShow" class="badge"></span>
       </div>
-      <div id="raceArea" class="race-area hidden">
+      <div id="raceArea" class="race-area">
         <div class="row wrap">
-          <span>Room:</span> <strong id="raceRoom"></strong>
-          <span>•</span> <span>Members:</span> <strong id="raceMembers">1</strong>
-          <span>•</span> <span>Phase:</span> <strong id="racePhase">Focus</strong>
-          <span>•</span> <span>Timer:</span> <strong id="raceTimer">--:--</strong>
+          <button id="raceStartPomo">Start Shared Pomodoro</button>
+          <button id="raceLeave" class="ghost">Leave</button>
         </div>
-        <div class="row wrap">
-          <select id="raceTaskSelect"></select>
-          <button id="raceMarkDone" class="primary">Mark Task Complete</button>
-          <button id="raceStartPomo" class="ghost">Start Shared Pomodoro</button>
-          <button id="raceEnd" class="danger">End Race</button>
+        <div class="row">
+          <select id="raceMyTask"></select>
+          <button id="raceMarkDone">Mark my task done</button>
         </div>
-        <div id="raceLeaderboard" class="leaderboard"></div>
+        <div id="raceTimer" class="race-timer">--:--</div>
+        <div id="raceBoard" class="race-board"></div>
         <div id="racePodium" class="podium hidden"></div>
       </div>
     </section>
   </main>
 
   <!-- Edit Block Modal -->
-  <div id="editModal" class="modal hidden" role="dialog" aria-modal="true">
-    <div class="modal-box">
+  <div id="editModal" class="modal">
+    <div class="box">
       <h3>Edit Block</h3>
-      <input id="mTitle">
+      <input id="mTitle" placeholder="Title"/>
       <div class="row">
-        <label>Start <input id="mStart" type="time" step="900"></label>
-        <label>End <input id="mEnd" type="time" step="900"></label>
+        <label>Start <input id="mStart" type="time" step="900"/></label>
+        <label>End <input id="mEnd" type="time" step="900"/></label>
       </div>
-      <label>Color <input id="mColor" type="color"></label>
-      <div class="row wrap">
-        <button id="mSave" class="primary">Save</button>
+      <label>Color <input id="mColor" type="color"/></label>
+      <div class="row">
+        <button id="mSave">Save</button>
         <button id="mDelete" class="danger">Delete</button>
         <button id="mCancel" class="ghost">Cancel</button>
       </div>
@@ -227,162 +232,171 @@
   </div>
 
   <!-- Pomodoro Overlay -->
-  <div id="pomodoroOverlay" class="overlay hidden" role="dialog" aria-modal="true">
-    <div class="pomo-box">
-      <div class="overlay-head">
+  <div id="pomoOverlay" class="overlay">
+    <div class="panel">
+      <div class="panel-head">
         <div id="pomoTitle">🍅 Pomodoro</div>
-        <div class="row wrap">
-          <label class="hint">🔊 Ambient <input id="ambientToggle" type="checkbox"></label>
-          <input id="ambientVolume" type="range" min="0" max="100" value="40">
+        <div class="row">
+          <label class="muted">🔊 Ambient <input id="ambientToggle" type="checkbox"/></label>
+          <input id="ambientVol" type="range" min="0" max="100" value="40"/>
           <button id="pomoClose" class="ghost">✖ Close</button>
         </div>
       </div>
-      <div id="pomoScene" class="scene tech"></div>
-      <div id="pomoPhase" class="hint">Focus</div>
+      <div id="scenePomo" class="scene"></div>
+      <div id="pomoPhase" class="muted">Focus</div>
+      <div id="focusCircle" class="ball"></div>
+      <div id="breakCircle" class="ball hide"></div>
       <div id="pomoTimer" class="big">25:00</div>
-      <div class="row wrap">
-        <button id="btnPause" class="warn">⏸ Pause</button>
-        <button id="btnDone" class="ok">✅ Done</button>
-        <button id="btnExit" class="danger">❌ Exit</button>
+      <div class="row">
+        <button id="pomoPause" class="warn">⏸️ Pause</button>
+        <button id="pomoDone" class="ok">✅ Done</button>
+        <button id="pomoExit" class="danger">❌ Exit</button>
       </div>
     </div>
   </div>
 
-  <!-- Calls Overlay & Mini -->
-  <div id="callOverlay" class="overlay hidden">
-    <div class="call-box">
-      <div class="overlay-head">
+  <!-- Calls Overlay / Floating -->
+  <div id="callOverlay" class="overlay">
+    <div class="panel">
+      <div class="panel-head">
         <div id="callTitle">📞 Penguin Call</div>
-        <div class="row wrap">
-          <label class="hint">🔊 Ambient <input id="callAmbientToggle" type="checkbox"></label>
-          <input id="callAmbientVolume" type="range" min="0" max="100" value="40">
+        <div class="row">
+          <label class="muted">🔊 Ambient <input id="callAmbToggle" type="checkbox"/></label>
+          <input id="callAmbVol" type="range" min="0" max="100" value="40"/>
           <button id="callMin" class="ghost">➖ Minimize</button>
           <button id="callClose" class="ghost">✖ Close</button>
         </div>
       </div>
-      <div id="callScene" class="scene tech"></div>
-      <div id="callTiny" class="hint hidden">Pomodoro: --:-- left</div>
+      <div id="sceneCall" class="scene"></div>
+      <div id="callTiny" class="muted hide">Pomodoro: --:-- left</div>
     </div>
   </div>
 
-  <div id="callMini" class="mini hidden">
-    <div class="mini-head">
+  <div id="callFloat" class="call-float">
+    <div class="float-head">
       <span>📞 Penguin Call</span>
       <div>
-        <button id="miniRestore" class="ghost small">⛶</button>
-        <button id="miniClose" class="ghost small">✖</button>
+        <button id="floatRestore" class="ghost">⛶</button>
+        <button id="floatClose" class="ghost">✖</button>
       </div>
     </div>
-    <div id="miniPenguin" class="penguin tiny">
-      <div class="body"></div><div class="wing left"></div><div class="wing right"></div>
-      <div class="eye left"></div><div class="eye right"></div><div class="beak"></div>
+    <div class="float-body">
+      <div id="floatPenguin" class="penguin small">
+        <div class="body"></div><div class="wing l"></div><div class="wing r"></div>
+        <div class="eye l"></div><div class="eye r"></div><div class="beak"></div>
+      </div>
+      <div id="floatCaption" class="muted">Chilling…</div>
+      <div id="floatTiny" class="muted hide">Pomodoro: --:-- left</div>
     </div>
-    <div id="miniCaption" class="hint">Chilling…</div>
-    <div id="miniTiny" class="hint hidden">Pomodoro: --:-- left</div>
   </div>
 
-  <!-- Calculator -->
-  <div id="calcModal" class="modal hidden">
-    <div class="calc-box">
+  <!-- Calculator Modal -->
+  <div id="calcModal" class="modal">
+    <div class="box">
       <h3>Calculator</h3>
-      <input id="calcDisplay" readonly>
-      <div id="calcPad" class="calc-grid"></div>
+      <input id="calcDisplay" readonly/>
+      <div id="calcGrid" class="calc-grid"></div>
       <div class="row"><button id="calcClose" class="ghost">Close</button></div>
     </div>
   </div>
 
-  <!-- Search -->
-  <div id="searchModal" class="modal hidden">
-    <div class="search-box">
+  <!-- Search Modal -->
+  <div id="searchModal" class="modal">
+    <div class="box large">
       <h3>Quick Search</h3>
       <div class="row">
-        <input id="searchInput" placeholder="Search definitions…">
-        <button id="searchGo" class="primary">Search</button>
+        <input id="searchInput" placeholder="Search definitions…"/>
+        <button id="searchGo">Search</button>
       </div>
-      <iframe id="searchFrame"></iframe>
+      <iframe id="searchFrame" title="Search"></iframe>
       <div class="row"><button id="searchClose" class="ghost">Close</button></div>
     </div>
   </div>
 
-  <!-- Alarm popup -->
-  <div id="alarmPopup" class="modal hidden">
-    <div class="modal-box">
+  <!-- Alarm Popup -->
+  <div id="alarmPopup" class="modal">
+    <div class="box">
       <h3>⏰ Alarm</h3>
-      <div id="alarmMsg" class="pad">Time!</div>
-      <div class="row wrap">
-        <button id="alarmSnooze" class="primary">Snooze 5 min</button>
-        <button id="alarmOk" class="ghost">OK</button>
+      <div id="alarmMsg">Time!</div>
+      <div class="row">
+        <button id="alarmSnooze">Snooze 5 min</button>
+        <button id="alarmOk" class="ok">OK</button>
       </div>
     </div>
   </div>
 
-  <!-- Settings Sidebar -->
-  <div id="settingsOverlay" class="settings hidden">
-    <aside id="settingsPanel" class="side">
-      <div class="side-head">
-        <h3>⚙️ Settings</h3>
-        <button id="settingsClose" class="ghost">✖</button>
+  <!-- Settings (sidebar) -->
+  <aside id="settings" class="settings">
+    <div class="settings-head">
+      <h3>⚙️ Settings</h3>
+      <button id="closeSettings" class="ghost">✖</button>
+    </div>
+    <div class="muted">Saved automatically</div>
+    <hr/>
+    <div class="set">
+      <label>Theme</label>
+      <select id="setTheme">
+        <option value="tech">💻 Tech Lab</option>
+        <option value="arctic">❄️ Arctic Base</option>
+        <option value="sunset">🌅 Sunset Beach</option>
+        <option value="space">🌌 Space Nebula</option>
+      </select>
+    </div>
+    <div class="set">
+      <label>Language</label>
+      <select id="setLang">
+        <option value="en">English</option>
+        <option value="es">Español</option>
+      </select>
+    </div>
+    <div class="set">
+      <label>Default Alarm/Pomodoro Sound</label>
+      <select id="setSound">
+        <option value="soft">Soft Digital</option>
+        <option value="beep">Beep-Boop</option>
+        <option value="ping">Pure Ping</option>
+      </select>
+    </div>
+    <div class="set">
+      <label>Global Volume</label>
+      <input id="setVol" type="range" min="0" max="100" value="40"/>
+    </div>
+    <hr/>
+    <h4>Avatar</h4>
+    <div class="avatar-row">
+      <div id="settingsAvatar" class="penguin">
+        <div class="body"></div><div class="wing l"></div><div class="wing r"></div>
+        <div class="eye l"></div><div class="eye r"></div><div class="beak"></div>
       </div>
-      <div class="side-section">
-        <label>Language
-          <select id="optLang">
-            <option value="en">English</option>
-            <option value="es">Español</option>
-          </select>
-        </label>
-      </div>
-      <div class="side-section">
-        <label>Theme
-          <select id="optTheme">
-            <option value="tech">💻 Tech Lab (default)</option>
-            <option value="arctic">❄️ Arctic Base</option>
-            <option value="sunset">🌅 Sunset Beach</option>
-            <option value="space">🌌 Space Nebula</option>
-          </select>
-        </label>
-      </div>
-      <div class="side-section">
-        <label>Sound Pack
-          <select id="optSound">
-            <option value="soft">Soft</option>
-            <option value="beep">Beep</option>
-            <option value="ping">Ping</option>
-          </select>
-        </label>
-      </div>
-      <div class="side-section">
-        <h4>Avatar</h4>
-        <div class="row center">
-          <div id="settingsAvatar" class="penguin">
-            <div class="body"></div><div class="wing left"></div><div class="wing right"></div>
-            <div class="eye left"></div><div class="eye right"></div><div class="beak"></div>
-          </div>
-        </div>
-        <input id="sName" placeholder="Name">
-        <div id="sColorChips" class="row wrap"></div>
+      <div class="stack">
+        <input id="sName" placeholder="Name"/>
         <div class="row">
-          <select id="sHead" class="grow"></select>
-          <select id="sBody" class="grow"></select>
-          <select id="sEffect" class="grow"></select>
+          <input id="sColor" type="color" value="#0ea5e9"/>
+          <select id="sHead">
+            <option value="">Head: none</option>
+            <option value="cap">Cap</option><option value="crown">Crown</option><option value="grad">Grad Hat</option><option value="headphones">Headphones</option><option value="glasses">Glasses</option>
+          </select>
         </div>
-        <button id="btnSaveSettingsAvatar" class="primary">Save Avatar</button>
-      </div>
-      <div class="side-section">
-        <h4>Pomodoro Defaults</h4>
-        <div class="row wrap">
-          <label>Work <input id="setWork" type="number" min="1" value="25"></label>
-          <label>Short <input id="setShort" type="number" min="1" value="5"></label>
-          <label>Long <input id="setLong" type="number" min="1" value="15"></label>
-          <label><input id="setAuto" type="checkbox"> Auto-next</label>
+        <div class="row">
+          <select id="sBody">
+            <option value="">Body: none</option>
+            <option value="scarf">Scarf</option><option value="bow">Bow</option><option value="cape">Cape</option><option value="mittens">Mittens</option>
+          </select>
+          <select id="sEffect">
+            <option value="">Effect: none</option>
+            <option value="aura">Aura</option><option value="rainbow">Rainbow Aura</option><option value="frost">Frost Aura</option>
+          </select>
         </div>
-        <button id="btnSaveDefaults" class="ghost">Save Defaults</button>
+        <button id="sSave">Save avatar</button>
       </div>
-      <div class="side-section">
-        <button id="btnResetToday" class="ghost">Reset Today</button>
-        <button id="btnClearAll" class="danger">Clear ALL</button>
-      </div>
-    </aside>
-  </div>
+    </div>
+    <hr/>
+    <div class="row">
+      <button id="recalcEconomy" class="ghost">🪙 Recalculate XP/Coins</button>
+      <button id="resetTodayBtn" class="ghost">Reset Today</button>
+      <button id="clearAllBtn" class="danger">Clear All</button>
+    </div>
+  </aside>
 
   <script src="script.js"></script>
 </body>
