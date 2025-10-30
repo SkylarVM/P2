@@ -441,7 +441,7 @@ hr{border:none;border-top:1px solid #22314a;opacity:.8;margin:6px 0}
   border-left: 3px solid var(--accent);
 }
 */
-/* ---------- Toast ---------- */
+/* ---------- Toast ---------- 
 .toast {
   position: fixed;
   bottom: 1rem; right: 1rem;
@@ -454,7 +454,7 @@ hr{border:none;border-top:1px solid #22314a;opacity:.8;margin:6px 0}
   transition: transform .4s ease;
   z-index: 99;
 }
-.toast.show { transform: translateY(0); }
+.toast.show { transform: translateY(0); }/*
 
 /* ---------- Overlay / Modal ---------- */
 .overlay, .modal {
